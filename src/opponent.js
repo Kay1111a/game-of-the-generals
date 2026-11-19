@@ -57,8 +57,9 @@ const SalpakanAI = (() => {
         success = cleared / candidates.length;
         score += payoff / candidates.length;
         // An unidentified piece that just reached our back row might win on this reply.
-        if (lastEnemy?.side === enemy && lastEnemy.to === to && R.row(to) === R.farRow(enemy)) {
-          score += 80 * success;
+        if (lastEnemy?.side === enemy && lastEnemy.to === to && R.row(to) === R.farRow(enemy) && candidates.includes("flag")) {
+          // Any non-Flag wins against a Flag. Missing that one reply would end the match.
+          score += mine === "flag" ? 80 * success : 260;
         }
       }
       if (mine === "flag") {

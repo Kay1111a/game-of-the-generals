@@ -29,7 +29,7 @@ const Salpakan = (() => {
   const requireRule = (ok, message) => { if (!ok) throw new Error(message); };
 
   function challenge(attacker, defender) {
-    requireRule(byId[attacker] && byId[defender], "Unknown rank.");
+    requireRule(Object.hasOwn(byId, attacker) && Object.hasOwn(byId, defender), "Unknown rank.");
     if (defender === "flag") return "attack"; // Includes Flag against Flag.
     if (attacker === "flag") return "defend";
     if (attacker === defender) return "both";
