@@ -4,7 +4,11 @@ permissions:
   contents: read
 jobs:
   play:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +32,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Salpakan-offline-and-playtests
+          name: Salpakan-offline-and-playtests-${{ matrix.os }}
           path: |
             dist/Salpakan.html
             test-results/
