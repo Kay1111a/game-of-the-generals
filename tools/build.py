@@ -1,0 +1,19 @@
+"""Package the game, including its font and license, as one offline HTML file."""
+import base64
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+html = (ROOT / "index.html").read_text(encoding="utf-8")
+css = (ROOT / "styles.css").read_text(encoding="utf-8")
+font = base64.b64encode((ROOT / "assets/display.ttf").read_bytes()).decode("ascii")
+css = css.replace("assets/display.ttf", "data:font/ttf;base64," + font)
+html = html.replace('<link rel="stylesheet" href="styles.css">', "<style>\n" + css + "\n</style>")
+for name in ("rules", "opponent", "app"):
+    source = (ROOT / f"src/{name}.js").read_text(encoding="utf-8")
+    html = html.replace(f'<script src="src/{name}.js"></script>', f"<script>\n{source}\n</script>")
+license_text = (ROOT / "assets/FONT-LICENSE.txt").read_text(encoding="utf-8")
+html = html.replace("</body>", '<script type="text/plain" id="font-license">\n' + license_text + "\n</script>\n</body>")
+output = ROOT / "dist" / "Salpakan.html"
+output.parent.mkdir(exist_ok=True)
+output.write_text(html, encoding="utf-8")
+print(f"Built {output.name} ({output.stat().st_size:,} bytes)")

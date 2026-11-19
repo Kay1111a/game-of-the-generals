@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#193c36">
+  <meta name="description" content="Play Salpakan, the Filipino hidden-rank strategy board game, solo or with a friend.">
+  <title>Salpakan · Game of the Generals</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="mast"><div class="mast-inner">
+    <div class="brand"><span class="compass" aria-hidden="true">✥</span> Salpakan</div>
+    <nav aria-label="Game"><button id="rules-top" class="ghost">Rules &amp; ranks</button><button id="new-top" class="outline">New match <span aria-hidden="true">＋</span></button></nav>
+  </div></header>
+  <main>
+    <div class="intro"><h1>Game of the Generals</h1><p>Capture the opposing Flag, or guide your own to the far row.</p></div>
+    <div class="table-layout">
+      <section class="table" aria-label="Game table">
+        <div class="board-meta"><span id="opponent-label"></span><span id="mode-label"></span></div>
+        <div class="frame" id="frame"><div id="board-mount"></div></div>
+        <div class="board-meta bottom"><span id="player-label"></span><span id="turn-label"></span></div>
+      </section>
+      <aside>
+        <section class="panel command" aria-labelledby="phase-heading">
+          <div class="eyebrow"><span class="round-mark" aria-hidden="true"></span><span id="phase-label"></span></div>
+          <h2 id="phase-heading"></h2><p id="guidance"></p><div id="actions" class="actions"></div>
+        </section>
+        <section class="panel log-panel"><h3>Move log</h3><div id="moves-log"></div></section>
+        <button class="quick" id="rules-side"><span class="quick-icon" aria-hidden="true">✧</span><span>Rank reference</span><span aria-hidden="true">↗</span></button>
+      </aside>
+    </div>
+    <div id="live" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
+  </main>
+  <dialog id="settings" aria-labelledby="settings-title">
+    <div class="modal-head"><h2 id="settings-title">New match</h2><button class="close" aria-label="Close settings">×</button></div>
+    <form id="new-form">
+      <fieldset><legend>Opponent</legend><div class="choice"><label><input type="radio" name="mode" value="solo" checked> Vs computer</label><label><input type="radio" name="mode" value="duo"> Two players</label></div></fieldset>
+      <label class="field">Opening turn<select id="first"><option value="ivory">Ivory moves first</option><option value="pine">Pine moves first</option><option value="coin">Flip a coin</option></select></label>
+      <fieldset><legend>Optional rules</legend><label class="check"><input id="open-ranks" type="checkbox"><span>Reveal challenge ranks<small>Both players can see the two ranks briefly after each challenge.</small></span></label>
+        <label class="check"><input id="tournament" type="checkbox"><span>Threefold repetition<small>Draw when the same full position and turn occur three times without a capture.</small></span></label></fieldset>
+      <p id="replace-note" class="fine"></p><button class="primary wide" type="submit">Start match</button>
+    </form>
+  </dialog>
+  <dialog id="rulebook" aria-labelledby="rules-title">
+    <div class="modal-head"><h2 id="rules-title">Rules &amp; ranks</h2><button class="close" aria-label="Close rulebook">×</button></div>
+    <p>Each player secretly arranges 21 pieces in their nearest three rows. Leave six squares empty. On your turn, move one piece one square horizontally or vertically. Choose an opposing piece to challenge it.</p>
+    <h3>Winning the match</h3><p>Capture the enemy Flag, or take your Flag to the far row. If an enemy is next to your Flag when it arrives, it must survive their next move. An attacking Flag wins against a defending Flag and loses against any other rank.</p>
+    <h3>Challenges</h3><p>Higher officers beat lower officers and Privates. A Spy beats any officer. A Private beats a Spy. Equal ranks remove each other, except when two Flags meet. In standard play the arbiter announces the outcome and keeps enemy ranks hidden.</p>
+    <h3>The 21 pieces</h3><ul id="ranks-list" class="rank-list"></ul>
+    <h3>Ending a match</h3><p>Offer a draw on your turn. Play continues if your opponent declines. Use Resign to concede or record a forfeit. Threefold repetition is an optional tournament convention in this edition.</p>
+    <button class="outline wide close">Back to board</button>
+  </dialog>
+  <dialog id="confirm" aria-labelledby="confirm-title">
+    <div class="modal-head"><h2 id="confirm-title">Resign this match?</h2></div>
+    <p>Your opponent will win the match.</p><div class="actions"><button id="cancel-resign" class="outline">Keep playing</button><button id="do-resign" class="primary">Resign match</button></div>
+  </dialog>
+  <script src="src/rules.js"></script>
+  <script src="src/opponent.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
