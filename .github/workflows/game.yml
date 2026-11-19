@@ -25,7 +25,7 @@ jobs:
       - name: Install browser for interface tests
         run: |
           python -m pip install playwright==1.55.0
-          python -m playwright install --with-deps chromium
+          python -m playwright install --only-shell chromium
       - name: Play local and solo matches in Chromium
         run: python tests/browser.py
       - name: Save the tested game and playtest evidence

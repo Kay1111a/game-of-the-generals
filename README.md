@@ -21,7 +21,7 @@ The supplied *Game of the Generals (Salpakan) Rules & Mechanics* guide is the ru
 - Officers beat lower officers and Privates. Spies beat officers, including the 5-Star General. Privates beat Spies. A Flag loses any challenge with a non-Flag.
 - Capture the enemy Flag to win. A Flag reaching the far row wins immediately if no enemy is orthogonally adjacent. Otherwise it must survive the opponent’s next move.
 - Both players can agree to a draw. A declined draw leaves the offering player’s turn intact. **Resign** concedes the match and can record an agreed forfeit.
-- The arbiter conceals enemy ranks. As an optional rule, both players can briefly see the two challenge ranks, then continue with covered pieces. The optional tournament setting declares a draw on the third occurrence of the full position with the same turn, without an intervening capture. The guide gives prolonged repetition as a tournament example and leaves the threshold open.
+- The arbiter conceals enemy ranks. As an optional rule, both players can briefly see the two challenge ranks, then continue with covered pieces. The optional tournament setting declares a draw on the third occurrence of the full position with the same turn, without an intervening capture. The guide gives prolonged repetition as a tournament example and leaves the threshold open. With just two Flags, you can still win by initiating a challenge. Offer a draw to settle a stalemate.
 
 ## How solo play works
 

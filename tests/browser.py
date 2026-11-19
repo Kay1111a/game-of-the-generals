@@ -132,6 +132,44 @@ def hotseat(browser):
     ctx.close()
 
 
+def breakthroughs(browser):
+    ctx,p=open_game(browser,"dist/Salpakan.html")
+    for intercept in (False,True):
+        select_match(p,"Two players")
+        pass_to(p,"Ivory")
+        place(p,"Ivory","Flag",18)
+        btn(p,"Lock formation").click()
+        pass_to(p,"Pine")
+        place(p,"Pine","Sergeant",64)
+        place(p,"Pine","Colonel",53)
+        # Clear file A by making ordinary, legal formation swaps on Pine's screen.
+        lane={45,54,63}
+        for source in sorted(lane):
+            if cell(p,source).locator(".piece").count():
+                board=public_position(p)
+                dest=next(n for n in range(45,72) if n not in lane and board[n] is None)
+                cell(p,source).click()
+                cell(p,dest).click()
+        btn(p,"Lock formation").click()
+        pass_to(p,"Ivory")
+        for turn,source in enumerate((18,27,36,45,54)):
+            move(p,source,source+9)
+            pass_to(p,"Pine")
+            if source!=54:
+                a,b=(53,44) if turn%2==0 else (44,53)
+                move(p,a,b)
+                pass_to(p,"Ivory")
+        # Pine still gets exactly one turn. Its screen conceals the identity of A8.
+        expect(cell(p,63)).to_have_attribute("aria-label","A8, Ivory concealed piece")
+        expect(p.locator("#phase-heading")).to_have_text("Pine to move")
+        move(p,64,63) if intercept else move(p,53,44)
+        expect(p.locator("#phase-heading")).to_have_text("Pine wins" if intercept else "Ivory wins")
+        reason=p.locator("#guidance").inner_text()
+        assert ("captured" if intercept else "far row") in reason
+        log("Contested breakthrough "+("intercepted" if intercept else "survived"),plies=10,reason=reason)
+    ctx.close()
+
+
 def public_position(p):
     labels=p.locator("[data-cell]").evaluate_all("(cells)=>cells.map(c=>[Number(c.dataset.cell),c.getAttribute('aria-label')])")
     board=[None]*72
@@ -208,6 +246,12 @@ def keyboard(browser):
     c=cell(p,18);c.focus()
     p.keyboard.press("ArrowRight");expect(cell(p,19)).to_be_focused()
     p.keyboard.press("ArrowUp");expect(cell(p,28)).to_be_focused()
+    piece=p.get_by_role("button",name=re.compile(r"^[A-I][1-8], Ivory ")).first
+    piece.focus()
+    p.keyboard.press("Space")
+    expect(piece).to_have_attribute("aria-pressed","true")
+    p.keyboard.press("Escape")
+    expect(piece).to_have_attribute("aria-pressed","false")
     btn(p,"Shuffle").click()
     assert p.evaluate("document.documentElement.scrollWidth <= innerWidth")
     select_match(p,"Vs computer",first="pine")
@@ -229,6 +273,7 @@ if __name__=="__main__":
         print("Chromium",browser.version,flush=True)
         try:
             hotseat(browser)
+            breakthroughs(browser)
             solo(browser)
             keyboard(browser)
             assert not errors,errors
