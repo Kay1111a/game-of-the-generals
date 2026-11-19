@@ -1,5 +1,6 @@
 """Package the game, including its font and license, as one offline HTML file."""
 import base64
+import hashlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,5 +16,6 @@ license_text = (ROOT / "assets/FONT-LICENSE.txt").read_text(encoding="utf-8")
 html = html.replace("</body>", '<script type="text/plain" id="font-license">\n' + license_text + "\n</script>\n</body>")
 output = ROOT / "dist" / "Salpakan.html"
 output.parent.mkdir(exist_ok=True)
-output.write_text(html, encoding="utf-8")
-print(f"Built {output.name} ({output.stat().st_size:,} bytes)")
+payload = html.encode("utf-8")
+output.write_bytes(payload)
+print(f"Built {output.name} ({len(payload):,} bytes), SHA-256 {hashlib.sha256(payload).hexdigest()}")

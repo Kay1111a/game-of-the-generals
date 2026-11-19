@@ -267,6 +267,8 @@ def keyboard(browser):
 
 
 if __name__=="__main__":
+    # The copy played on Windows must be byte-identical to the one distributed on Linux.
+    assert b"\r" not in (ROOT/"dist/Salpakan.html").read_bytes(), "Noncanonical line endings in the portable build"
     with sync_playwright() as pw:
         launch={"executable_path":os.environ["CHROMIUM_PATH"]} if "CHROMIUM_PATH" in os.environ else {}
         browser=pw.chromium.launch(**launch)
