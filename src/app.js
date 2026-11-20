@@ -40,7 +40,7 @@
     picker.scrollTop = 0;
     (pickMode ? id("mode-ai") : picker.querySelector("[data-difficulty]")).focus({preventScroll:true});
   }
-  function chooseSettings() {
+  function chooseSettings(step = "mode") {
     clearTimeout(timer); timer = null;
     id("first").value = g?.settings.first ?? R.IVORY;
     id("open-ranks").checked = g?.settings.open ?? false;
@@ -48,7 +48,7 @@
     id("match-options").open = false;
     id("return-match").hidden = !g;
     id("replace-note").hidden = !g || g.phase === "over";
-    showPickerStep("mode");
+    showPickerStep(step);
   }
   function startFromPicker(mode, difficulty) {
     const settings = {mode, difficulty, first:id("first").value, open:id("open-ranks").checked,
@@ -214,6 +214,7 @@
     container.replaceChildren(list);
   }
   function render() {
+    id("back-setup").hidden = g.phase !== "setup";
     const wasBoard = mount.contains(document.activeElement);
     const view = R.viewFor(g,cover ? null : viewer);
     mount.replaceChildren(cover ? curtain() : board(view));
@@ -240,6 +241,16 @@
       heading = "Set your formation"; help = "Select a piece, then a home square to move or swap it. Lock when all 21 are where you want them.";
       actions.append(button("Lock formation",lock,"primary"),button("Shuffle",()=>{
         R.shuffle(g,viewer); selected=null; note="Formation shuffled."; render(); report(note);
+      }),button("Arrange by rank",()=>{
+        const squares = [...mount.querySelectorAll("[data-cell]")].map(c=>Number(c.dataset.cell))
+          .filter(i=>g.board[i]?.side === viewer);
+        const ordered = squares.map(i=>g.board[i].rank).sort((a,b)=>R.byId[a].order-R.byId[b].order);
+        squares.forEach((to,n)=>{
+          if (g.board[to].rank === ordered[n]) return;
+          const from = squares.slice(n+1).find(i=>g.board[i].rank === ordered[n]);
+          R.arrange(g,viewer,from,to);
+        });
+        selected=null; note="Formation ordered from the top left. Spies and Flag come last."; render(); report(note);
       }));
     } else {
       const thinking = g.settings.mode === "solo" && g.turn === R.PINE;
@@ -271,7 +282,8 @@
     if (!R.neighbors(i).includes(j)) return;
     focusSquare=j; cell.tabIndex=-1; const next=mount.querySelector('[data-cell="'+j+'"]'); next.tabIndex=0; next.focus();
   });
-  id("new-top").addEventListener("click",chooseSettings);
+  id("new-top").addEventListener("click",()=>chooseSettings());
+  id("back-setup").addEventListener("click",()=>chooseSettings(g.settings.mode === "solo" ? "difficulty" : "mode"));
   id("mode-ai").addEventListener("click",()=>showPickerStep("difficulty"));
   id("mode-duo").addEventListener("click",()=>startFromPicker("duo"));
   for (const b of picker.querySelectorAll("[data-difficulty]")) {
@@ -291,7 +303,7 @@
   id("do-resign").addEventListener("click",()=>{ R.resign(g,viewer); note=""; id("confirm").close(); nextTurn(); });
   for (const d of document.querySelectorAll("dialog")) d.addEventListener("close",scheduleAI);
   for (const r of R.ranks) {
-    const item=el("li"); item.append(el("span","",r.name),el("strong","","×"+r.count)); id("ranks-list").append(item);
+    const item=el("li"); item.append(el("span","",(r.order < 13 ? (r.order+1)+". " : "Special · ")+r.name),el("strong","","×"+r.count)); id("ranks-list").append(item);
   }
   chooseSettings();
 })();

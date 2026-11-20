@@ -15,7 +15,7 @@
     <nav aria-label="Game"><button id="rules-top" class="ghost">Rules &amp; ranks</button><button id="new-top" class="outline">New match <span aria-hidden="true">＋</span></button></nav>
   </div></header>
   <main>
-    <div class="intro"><h1>Game of the Generals</h1><p>Capture the opposing Flag, or guide your own to the far row.</p></div>
+    <div class="intro"><button id="back-setup" class="outline" hidden>Back</button><h1>Game of the Generals</h1><p>Capture the opposing Flag, or guide your own to the far row.</p></div>
     <div class="table-layout">
       <section class="table" aria-label="Game table">
         <div class="board-meta"><span id="opponent-label"></span><span id="mode-label"></span></div>
@@ -64,7 +64,13 @@
     <p>Each player secretly arranges 21 pieces in their nearest three rows. Leave six squares empty. On your turn, move one piece one square horizontally or vertically. Choose an opposing piece to challenge it.</p>
     <h3>Winning the match</h3><p>Capture the enemy Flag, or take your Flag to the far row. If an enemy is next to your Flag when it arrives, it must survive their next move. An attacking Flag wins against a defending Flag and loses against any other rank.</p>
     <h3>Challenges</h3><p>Higher officers beat lower officers and Privates. A Spy beats any officer. A Private beats a Spy. Equal ranks remove each other, except when two Flags meet. In standard play the arbiter announces the outcome and keeps enemy ranks hidden.</p>
-    <h3>The 21 pieces</h3><ul id="ranks-list" class="rank-list"></ul>
+    <h3>Beginner’s capture guide</h3>
+    <p>Read the officer list from top to bottom. An officer captures anyone below it on the ladder and can capture the Flag. For example, a Captain takes a Sergeant. A Colonel takes a Captain.</p>
+    <p><b>Spy:</b> Takes every officer, even the 5-Star General, and the Flag. A Private beats a Spy, whichever piece starts the challenge.</p>
+    <p><b>Private:</b> Takes a Spy or Flag. Every officer beats a Private. Two Privates remove each other, as do two Spies or two officers of the same rank.</p>
+    <p><b>Flag:</b> Can capture only the opposing Flag by moving onto it. Any enemy can capture a defending Flag.</p>
+    <h3>Your 21 pieces</h3><p>The first twelve ranks form the officer ladder, strongest first. Six Privates follow. The two Spies and one Flag have special capture rules.</p>
+    <ul id="ranks-list" class="rank-list"></ul>
     <h3>Ending a match</h3><p>Offer a draw on your turn. Play continues if your opponent declines. Use Resign to concede or record a forfeit. Threefold repetition is an optional tournament convention in this edition.</p>
     <button class="outline wide close">Back to board</button>
   </dialog>

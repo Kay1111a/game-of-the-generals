@@ -732,7 +732,7 @@ select {
 
 .rank-list {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 0 12px;
   padding: 0;
   list-style: none;

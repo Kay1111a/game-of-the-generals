@@ -31,6 +31,8 @@ The supplied *Game of the Generals (Salpakan) Rules & Mechanics* guide is the ru
 - Both players can agree to a draw. A declined draw leaves the offering player’s turn intact. **Resign** concedes the match and can record an agreed forfeit.
 - The arbiter conceals enemy ranks. As an optional rule, both players can briefly see the two challenge ranks, then continue with covered pieces. The optional tournament setting declares a draw on the third occurrence of the full position with the same turn, without an intervening capture. The guide gives prolonged repetition as a tournament example and leaves the threshold open. With just two Flags, you can still win by initiating a challenge. Offer a draw to settle a stalemate.
 
+During deployment, **Back** reopens the last choice. **Arrange by rank** sorts your visible army across occupied squares from the top left. You can still swap pieces or shuffle before locking. The beginner capture guide under **Rules & ranks** explains the rank ladder, Spies, Privates and Flags.
+
 ## How solo play works
 
 The computer receives its own ranks, enemy locations, and outcomes of past challenges. It follows surviving pieces and uses those outcomes to narrow their possible ranks. It weighs challenges, threats to its Flag and possible breakthroughs. This is a local, rule-based opponent. It works offline without an API key.
