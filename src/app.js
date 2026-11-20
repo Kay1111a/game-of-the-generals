@@ -56,6 +56,10 @@
     picker.close();
     start(settings);
   }
+  function backFromPicker() {
+    if (!id("difficulty-step").hidden) showPickerStep("mode");
+    else if (g) picker.close();
+  }
   function start(settings) {
     clearTimeout(timer); timer = null;
     g = R.newGame(settings); viewer = R.IVORY; selected = null; note = ""; focusSquare = 18;
@@ -275,10 +279,12 @@
   }
   id("back-mode").addEventListener("click",()=>showPickerStep("mode"));
   id("return-match").addEventListener("click",()=>picker.close());
-  picker.addEventListener("cancel",e=>{
-    if (!id("difficulty-step").hidden) { e.preventDefault(); showPickerStep("mode"); }
-    else if (!g) e.preventDefault();
+  picker.addEventListener("keydown",e=>{
+    if (e.key !== "Escape") return;
+    e.preventDefault();
+    if (!e.repeat) backFromPicker();
   });
+  picker.addEventListener("cancel",e=>{ e.preventDefault(); backFromPicker(); });
   for (const key of ["rules-top","rules-side"]) id(key).addEventListener("click",()=>id("rulebook").showModal());
   for (const b of document.querySelectorAll("dialog .close")) b.addEventListener("click",()=>b.closest("dialog").close());
   id("cancel-resign").addEventListener("click",()=>id("confirm").close());
