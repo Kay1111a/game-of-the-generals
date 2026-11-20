@@ -3,8 +3,8 @@ package io.github.kay1111a.salpakan;
 import static org.junit.Assert.*;
 import android.app.Instrumentation;
 import android.content.pm.PackageManager;
+import android.graphics.Point;
 import android.graphics.Rect;
-import android.view.accessibility.AccessibilityNodeInfo;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.InputDevice;
@@ -45,41 +45,48 @@ public class BoardTest {
         assertEquals(query, expected, last);
     }
 
-    private Rect visibleButton(ActivityScenario<GameActivity> app, String label, String selector) throws Exception {
-        long until=SystemClock.uptimeMillis()+4000;
+    private Point buttonCenter(ActivityScenario<GameActivity> app, String selector) throws Exception {
+        String hitTest = "(()=>{const button=document.querySelector("+JSONObject.quote(selector)+");"
+            + "if(!button || !button.getClientRects().length) return null;"
+            + "const r=button.getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2;"
+            + "if(!button.contains(document.elementFromPoint(x,y))) return null;"
+            + "return [x/innerWidth,y/innerHeight];})()";
+        long until=SystemClock.uptimeMillis()+30000;
         do {
-            AccessibilityNodeInfo root=device.getUiAutomation().getRootInActiveWindow();
-            if (root!=null) {
-                for (AccessibilityNodeInfo node : root.findAccessibilityNodeInfosByText(label)) {
-                    if (node.isVisibleToUser() && node.isClickable()) {
-                        Rect rect=new Rect();
-                        node.getBoundsInScreen(rect);
-                        if (!rect.isEmpty()) return rect;
-                    }
+            Rect webBounds=new Rect();
+            app.onActivity(a -> {
+                WebView view=a.findViewById(R.id.game_board);
+                if (!a.hasWindowFocus() || !view.isShown() || view.getWidth()==0 || view.getHeight()==0) return;
+                int[] origin=new int[2];
+                view.getLocationOnScreen(origin);
+                webBounds.set(origin[0],origin[1],origin[0]+view.getWidth(),origin[1]+view.getHeight());
+            });
+            if (!webBounds.isEmpty()) {
+                String result=js(app,hitTest);
+                if (result!=null && !result.equals("null")) {
+                    JSONArray center=new JSONArray(result);
+                    int x=webBounds.left+(int)(center.getDouble(0)*webBounds.width());
+                    int y=webBounds.top+(int)(center.getDouble(1)*webBounds.height());
+                    if (webBounds.contains(x,y)) return new Point(x,y);
                 }
             }
             SystemClock.sleep(100);
         } while (SystemClock.uptimeMillis()<until);
-        // Some WebView providers omit virtual nodes from an accessibility text search.
-        // Use the rendered button's center for the same OS-level tap on those providers.
-        JSONArray point=new JSONArray(js(app,"(()=>{const r=document.querySelector("+JSONObject.quote(selector)+").getBoundingClientRect();return [(r.left+r.width/2)/innerWidth,(r.top+r.height/2)/innerWidth];})()"));
-        double x=point.getDouble(0), y=point.getDouble(1);
-        Rect rect=new Rect();
-        app.onActivity(a -> {
-            WebView view=a.findViewById(R.id.game_board);
-            int[] loc=new int[2]; view.getLocationOnScreen(loc);
-            int left=loc[0]+(int)(x*view.getWidth()), top=loc[1]+(int)(y*view.getWidth());
-            rect.set(left,top,left+1,top+1);
-        });
-        return rect;
+        throw new AssertionError("No visible, tappable "+selector+" in the focused game window");
     }
 
-    private void tap(ActivityScenario<GameActivity> app, String label, String selector) throws Exception {
-        Rect button=visibleButton(app,label,selector);
+    private void tap(ActivityScenario<GameActivity> app, String selector) throws Exception {
+        device.waitForIdleSync();
+        Point point=buttonCenter(app,selector);
         long at=SystemClock.uptimeMillis();
         for (int kind : new int[]{MotionEvent.ACTION_DOWN,MotionEvent.ACTION_UP}) {
-            MotionEvent e=MotionEvent.obtain(at,SystemClock.uptimeMillis(),kind,button.exactCenterX(),button.exactCenterY(),0);
-            e.setSource(InputDevice.SOURCE_TOUCHSCREEN); device.sendPointerSync(e); e.recycle();
+            MotionEvent e=MotionEvent.obtain(at,SystemClock.uptimeMillis(),kind,point.x,point.y,0);
+            e.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+            try {
+                assertTrue("Android did not deliver the tap on "+selector, device.getUiAutomation().injectInputEvent(e,true));
+            } finally {
+                e.recycle();
+            }
             if (kind==MotionEvent.ACTION_DOWN) SystemClock.sleep(75);
         }
     }
@@ -99,15 +106,15 @@ public class BoardTest {
                     @Override public void onComplete(long requestId) { painted.complete(true); }
                 }));
             painted.get(15,TimeUnit.SECONDS);
-            tap(app,"Player vs AI","#mode-ai");
+            tap(app,"#mode-ai");
             awaitJs(app,levels,"true");
             awaitJs(app,cells,"0");
             device.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
             awaitJs(app,modes,"true");
             awaitJs(app,cells,"0");
-            tap(app,"Player vs AI","#mode-ai");
+            tap(app,"#mode-ai");
             awaitJs(app,levels,"true");
-            tap(app,"Hard","[data-difficulty='hard']");
+            tap(app,"[data-difficulty='hard']");
             awaitJs(app,"document.querySelector('#mode-label').textContent",JSONObject.quote("Vs computer · Hard"));
             awaitJs(app,cells,"72");
             app.recreate();
