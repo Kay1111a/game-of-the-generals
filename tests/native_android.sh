@@ -2,6 +2,8 @@
 set -euo pipefail
 adb install -r dist/Salpakan.apk
 adb install -r native/android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk
+adb shell input keyevent KEYCODE_WAKEUP
+adb shell wm dismiss-keyguard
 adb shell svc wifi disable
 adb shell svc data disable
 adb logcat -c
