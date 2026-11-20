@@ -24,39 +24,45 @@
     return b;
   }
 
-  let g = R.newGame(), viewer = R.IVORY, selected = null, cover = null, note = "", timer = null;
+  let g = null, viewer = R.IVORY, selected = null, cover = null, note = "", timer = null;
   let focusSquare = 18;
   const mount = id("board-mount"), actions = id("actions");
   const phase = () => g.phase === "setup" ? "Deployment" : g.phase === "over" ? "Match finished" : "In play";
   function report(s) { id("live").textContent = s; }
   function modalOpen() { return Boolean(document.querySelector("dialog[open]")); }
-  const difficultyHint = {
-    easy: "A practice opponent that explores and takes occasional chances.",
-    medium: "Remembers challenges and looks for favorable exchanges.",
-    hard: "Also weighs likely replies and which enemy ranks are still in play.",
-  };
-  function updateDifficultyField() {
-    const solo = id("new-form").elements.mode.value === "solo";
-    id("difficulty-field").hidden = !solo;
-    id("difficulty").disabled = !solo;
-    id("difficulty-hint").textContent = difficultyHint[id("difficulty").value];
+  const picker = id("settings");
+  function showPickerStep(step) {
+    const pickMode = step === "mode";
+    id("mode-step").hidden = !pickMode;
+    id("difficulty-step").hidden = pickMode;
+    id("settings-title").textContent = pickMode ? "Choose a game mode" : "Choose AI difficulty";
+    if (!picker.open) picker.showModal();
+    picker.scrollTop = 0;
+    (pickMode ? id("mode-ai") : picker.querySelector("[data-difficulty]")).focus({preventScroll:true});
   }
-  function chooseSettings(mode = g.settings.mode) {
-    const f = id("new-form");
-    f.elements.mode.value = mode;
-    id("difficulty").value = g.settings.difficulty;
-    updateDifficultyField();
-    id("first").value = g.settings.first;
-    id("open-ranks").checked = g.settings.open;
-    id("tournament").checked = g.settings.tournament;
-    id("replace-note").textContent = g.phase === "over" ? "" : "Starting a match replaces the current board.";
-    id("settings").showModal();
+  function chooseSettings() {
+    clearTimeout(timer); timer = null;
+    id("first").value = g?.settings.first ?? R.IVORY;
+    id("open-ranks").checked = g?.settings.open ?? false;
+    id("tournament").checked = g?.settings.tournament ?? false;
+    id("match-options").open = false;
+    id("return-match").hidden = !g;
+    id("replace-note").hidden = !g || g.phase === "over";
+    showPickerStep("mode");
+  }
+  function startFromPicker(mode, difficulty) {
+    const settings = {mode, difficulty, first:id("first").value, open:id("open-ranks").checked,
+      tournament:id("tournament").checked};
+    picker.close();
+    start(settings);
   }
   function start(settings) {
     clearTimeout(timer); timer = null;
     g = R.newGame(settings); viewer = R.IVORY; selected = null; note = ""; focusSquare = 18;
     cover = settings.mode === "duo" ? {kind:"pass", side:R.IVORY} : null;
+    document.body.removeAttribute("data-launch");
     render(); report("New match. Ivory arranges first.");
+    (cover ? mount : actions).querySelector("button").focus({preventScroll:true});
   }
   function pass(side) {
     selected = null;
@@ -79,7 +85,7 @@
   }
   function scheduleAI() {
     clearTimeout(timer); timer = null;
-    if (g.settings.mode !== "solo" || g.phase !== "play" || g.turn !== R.PINE || g.drawOffer || cover || modalOpen()) return;
+    if (!g || g.settings.mode !== "solo" || g.phase !== "play" || g.turn !== R.PINE || g.drawOffer || cover || modalOpen()) return;
     const match = g;
     timer = setTimeout(() => {
       if (g !== match || g.phase !== "play" || g.turn !== R.PINE || cover || modalOpen()) return;
@@ -230,8 +236,6 @@
       heading = "Set your formation"; help = "Select a piece, then a home square to move or swap it. Lock when all 21 are where you want them.";
       actions.append(button("Lock formation",lock,"primary"),button("Shuffle",()=>{
         R.shuffle(g,viewer); selected=null; note="Formation shuffled."; render(); report(note);
-      }),button(g.settings.mode === "solo" ? "Two players…" : "Vs computer…",()=>{
-        chooseSettings(g.settings.mode === "solo" ? "duo" : "solo");
       }));
     } else {
       const thinking = g.settings.mode === "solo" && g.turn === R.PINE;
@@ -263,20 +267,25 @@
     if (!R.neighbors(i).includes(j)) return;
     focusSquare=j; cell.tabIndex=-1; const next=mount.querySelector('[data-cell="'+j+'"]'); next.tabIndex=0; next.focus();
   });
-  id("new-top").addEventListener("click",()=>chooseSettings());
-  id("new-form").addEventListener("change",updateDifficultyField);
+  id("new-top").addEventListener("click",chooseSettings);
+  id("mode-ai").addEventListener("click",()=>showPickerStep("difficulty"));
+  id("mode-duo").addEventListener("click",()=>startFromPicker("duo"));
+  for (const b of picker.querySelectorAll("[data-difficulty]")) {
+    b.addEventListener("click",()=>startFromPicker("solo",b.dataset.difficulty));
+  }
+  id("back-mode").addEventListener("click",()=>showPickerStep("mode"));
+  id("return-match").addEventListener("click",()=>picker.close());
+  picker.addEventListener("cancel",e=>{
+    if (!id("difficulty-step").hidden) { e.preventDefault(); showPickerStep("mode"); }
+    else if (!g) e.preventDefault();
+  });
   for (const key of ["rules-top","rules-side"]) id(key).addEventListener("click",()=>id("rulebook").showModal());
   for (const b of document.querySelectorAll("dialog .close")) b.addEventListener("click",()=>b.closest("dialog").close());
   id("cancel-resign").addEventListener("click",()=>id("confirm").close());
   id("do-resign").addEventListener("click",()=>{ R.resign(g,viewer); note=""; id("confirm").close(); nextTurn(); });
   for (const d of document.querySelectorAll("dialog")) d.addEventListener("close",scheduleAI);
-  id("new-form").addEventListener("submit",e=>{
-    e.preventDefault();
-    const opts={mode:e.currentTarget.elements.mode.value,difficulty:id("difficulty").value,first:id("first").value,open:id("open-ranks").checked,tournament:id("tournament").checked};
-    id("settings").close(); start(opts);
-  });
   for (const r of R.ranks) {
     const item=el("li"); item.append(el("span","",r.name),el("strong","","×"+r.count)); id("ranks-list").append(item);
   }
-  render();
+  chooseSettings();
 })();

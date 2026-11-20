@@ -45,7 +45,7 @@ public class BoardTest {
         assertEquals(query, expected, last);
     }
 
-    private Rect visibleButton(ActivityScenario<GameActivity> app, String label) throws Exception {
+    private Rect visibleButton(ActivityScenario<GameActivity> app, String label, String selector) throws Exception {
         long until=SystemClock.uptimeMillis()+4000;
         do {
             AccessibilityNodeInfo root=device.getUiAutomation().getRootInActiveWindow();
@@ -62,7 +62,7 @@ public class BoardTest {
         } while (SystemClock.uptimeMillis()<until);
         // Some WebView providers omit virtual nodes from an accessibility text search.
         // Use the rendered button's center for the same OS-level tap on those providers.
-        JSONArray point=new JSONArray(js(app,"(()=>{const r=document.querySelector('#new-top').getBoundingClientRect();return [(r.left+r.width/2)/innerWidth,(r.top+r.height/2)/innerWidth];})()"));
+        JSONArray point=new JSONArray(js(app,"(()=>{const r=document.querySelector("+JSONObject.quote(selector)+").getBoundingClientRect();return [(r.left+r.width/2)/innerWidth,(r.top+r.height/2)/innerWidth];})()"));
         double x=point.getDouble(0), y=point.getDouble(1);
         Rect rect=new Rect();
         app.onActivity(a -> {
@@ -74,10 +74,24 @@ public class BoardTest {
         return rect;
     }
 
+    private void tap(ActivityScenario<GameActivity> app, String label, String selector) throws Exception {
+        Rect button=visibleButton(app,label,selector);
+        long at=SystemClock.uptimeMillis();
+        for (int kind : new int[]{MotionEvent.ACTION_DOWN,MotionEvent.ACTION_UP}) {
+            MotionEvent e=MotionEvent.obtain(at,SystemClock.uptimeMillis(),kind,button.exactCenterX(),button.exactCenterY(),0);
+            e.setSource(InputDevice.SOURCE_TOUCHSCREEN); device.sendPointerSync(e); e.recycle();
+            if (kind==MotionEvent.ACTION_DOWN) SystemClock.sleep(75);
+        }
+    }
+
     @Test public void playOfflineOnInstalledApk() throws Exception {
         assertEquals(PackageManager.PERMISSION_DENIED, device.getTargetContext().checkSelfPermission(android.Manifest.permission.INTERNET));
         try (ActivityScenario<GameActivity> app = ActivityScenario.launch(GameActivity.class)) {
-            awaitJs(app,"document.querySelectorAll('[data-cell]').length","72");
+            String modes="!!document.querySelector('#settings[open] #mode-step:not([hidden])')";
+            String levels="!!document.querySelector('#settings[open] #difficulty-step:not([hidden])')";
+            String cells="document.querySelectorAll('[data-cell]').length";
+            awaitJs(app,modes,"true");
+            awaitJs(app,cells,"0");
             // DOM readiness can precede the first composited frame on a cold emulator.
             CompletableFuture<Boolean> painted=new CompletableFuture<>();
             app.onActivity(a -> ((WebView)a.findViewById(R.id.game_board)).postVisualStateCallback(1,
@@ -85,16 +99,19 @@ public class BoardTest {
                     @Override public void onComplete(long requestId) { painted.complete(true); }
                 }));
             painted.get(15,TimeUnit.SECONDS);
-            Rect button=visibleButton(app,"New match");
-            long at=SystemClock.uptimeMillis();
-            for (int kind : new int[]{MotionEvent.ACTION_DOWN,MotionEvent.ACTION_UP}) {
-                MotionEvent e=MotionEvent.obtain(at,SystemClock.uptimeMillis(),kind,button.exactCenterX(),button.exactCenterY(),0);
-                e.setSource(InputDevice.SOURCE_TOUCHSCREEN); device.sendPointerSync(e); e.recycle();
-                if (kind==MotionEvent.ACTION_DOWN) SystemClock.sleep(75);
-            }
-            awaitJs(app,"document.querySelector('#settings').open","true");
+            tap(app,"Player vs AI","#mode-ai");
+            awaitJs(app,levels,"true");
+            awaitJs(app,cells,"0");
             device.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-            awaitJs(app,"document.querySelector('#settings').open","false");
+            awaitJs(app,modes,"true");
+            awaitJs(app,cells,"0");
+            tap(app,"Player vs AI","#mode-ai");
+            awaitJs(app,levels,"true");
+            tap(app,"Hard","[data-difficulty='hard']");
+            awaitJs(app,"document.querySelector('#mode-label').textContent",JSONObject.quote("Vs computer · Hard"));
+            awaitJs(app,cells,"72");
+            app.recreate();
+            awaitJs(app,modes,"true");
             try (InputStream input=device.getContext().getAssets().open("play.js")) {
                 ByteArrayOutputStream bytes=new ByteArrayOutputStream(); byte[] buf=new byte[4096]; int n;
                 while ((n=input.read(buf))!=-1) bytes.write(buf,0,n);

@@ -21,15 +21,21 @@ async function playNativeMatches() {
     b.click();
   }
   function settings(mode, difficulty) {
-    find("#new-top").click();
-    find('input[name="mode"][value="' + mode + '"]').click();
-    check(find("#difficulty").disabled === (mode === "duo"), "difficulty availability");
+    if (!find("#settings").open) find("#new-top").click();
+    check(find("#settings").open && !find("#mode-step").hidden && find("#difficulty-step").hidden,
+      "new match must ask for the mode first");
+    const visiblePieces = document.querySelectorAll(".piece").length;
+    find("#mode-" + (mode === "solo" ? "ai" : "duo")).click();
     if (mode === "solo") {
-      find("#difficulty").value = difficulty;
-      find("#difficulty").dispatchEvent(new Event("change",{bubbles:true}));
+      check(find("#settings").open && find("#mode-step").hidden && !find("#difficulty-step").hidden,
+        "selecting AI must show a separate difficulty step");
+      check(document.querySelectorAll(".piece").length === visiblePieces, "AI started before difficulty was chosen");
+      find('[data-difficulty="' + difficulty + '"]').click();
+      check(cells().length === 72 && heading() === "Set your formation", "solo deployment");
+    } else {
+      check(!cells().length && find(".curtain h2").textContent === "Pass to Ivory", "two-player private start");
     }
-    find("#first").value = "ivory";
-    action("Start match");
+    check(!find("#settings").open, "picker still open after the final choice");
   }
   function reveal(side) {
     check(cells().length === 0 && !find(".piece"), "handoff exposed pieces");
@@ -78,6 +84,13 @@ async function playNativeMatches() {
   }
   const actualRandom = Math.random;
   try {
+    check(find("#settings").open && !find("#mode-step").hidden && find("#difficulty-step").hidden,
+      "fresh launch must show only the mode choices");
+    check(!cells().length && !find(".piece") && !find(".log-list li"), "unexpected match at launch");
+    find("#mode-ai").click();
+    check(!find("#difficulty-step").hidden && !cells().length, "first AI choice started too soon");
+    find("#back-mode").click();
+    check(!find("#mode-step").hidden && !cells().length, "back should preserve the fresh menu");
     for (const level of ["easy","medium","hard"]) {
       report.active = level;
       let seed = 3;

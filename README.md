@@ -6,13 +6,15 @@ An offline edition of the Filipino hidden-rank board game. Arrange 21 pieces, ch
 
 [Download the latest release](https://github.com/Kay1111a/game-of-the-generals/releases/latest). Open **Salpakan.exe** on Windows 10/11 x64, or install **Salpakan.apk** on Android 9 or later. Each contains the full game and plays offline. Windows uses the Microsoft Edge WebView2 Runtime. Android needs System WebView or Chrome version 105 or newer. The Windows app is unsigned. The APK uses a development signing certificate for sideloading. A build signed with a different development certificate requires reinstalling the app.
 
-Choose **New match → Vs computer → AI difficulty**. **Easy** varies its moves and occasionally takes risks. **Medium** remembers challenge outcomes and looks for favorable exchanges. **Hard** also tracks remaining ranks, considers the opponent’s best adjacent recapture and looks for a safe route for its Flag. Medium is the default. Play Again keeps the selected difficulty. The difficulty control is hidden for two-player matches.
+Opening the game shows **Player vs AI** and **Two Players**. Choose **Player vs AI** to open the difficulty screen. Selecting **Easy**, **Medium**, or **Hard** starts deployment, and Pine uses that level from its first move. **Two Players** goes straight to the private **Pass to Ivory** handoff. Both players share the same device.
+
+**Easy** varies its moves and occasionally takes risks. **Medium** remembers challenge outcomes and looks for favorable exchanges. **Hard** also tracks remaining ranks, considers an adjacent recapture and looks for a safe route for its Flag. **New match** opens the mode choices again. **Play again** repeats the last mode and difficulty.
 
 ## Play the browser edition
 
 1. Download the repository ZIP from **Code → Download ZIP** and extract it.
 2. Open **index.html** in a modern browser. Keep the extracted files together.
-3. The game opens in **Vs computer**. Choose **Two players… → Start match** for local multiplayer.
+3. Choose a mode on the opening screen. To set who moves first or enable optional rules, open **Match options** before choosing your mode.
 4. Select a piece, then a square in your three home rows to move or swap it. **Shuffle** proposes another formation. **Lock formation** starts play after both sides have deployed.
 5. Each turn, select your own piece and choose a marked destination. On a keyboard, tab to the board, use the arrow keys to navigate, Enter or Space to choose a square, and Escape to clear your selection. In two-player mode, hand over the device while the board is concealed.
 
@@ -38,7 +40,7 @@ The computer receives its own ranks, enemy locations, and outcomes of past chall
 Use Node.js 22+ and Python 3.10+ for development. The browser edition runs offline.
 
 ```sh
-node --test tests/game.test.cjs
+node --test tests/game.test.cjs tests/difficulty.test.cjs
 python tools/build.py
 python -m pip install playwright==1.55.0
 python -m playwright install chromium

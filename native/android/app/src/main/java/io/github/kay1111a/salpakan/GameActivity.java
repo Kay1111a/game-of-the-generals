@@ -74,9 +74,12 @@ public final class GameActivity extends Activity {
 
     @Override public void onBackPressed() {
         if (game == null) { super.onBackPressed(); return; }
-        game.evaluateJavascript("(()=>{const d=document.querySelector('dialog[open]');if(d){d.close();return true;}return false;})()", closed -> {
-            if (!"true".equals(closed) && !isFinishing()) {
-                new AlertDialog.Builder(this).setTitle("Leave this match?").setMessage("Closing the game ends the current match.")
+        String back = "(()=>{const d=document.querySelector('dialog[open]');"
+            + "if(!d || (d.id==='settings' && document.body.hasAttribute('data-launch') && !document.getElementById('mode-step').hidden)) return false;"
+            + "if(d.dispatchEvent(new Event('cancel',{cancelable:true}))) d.close();return true;})()";
+        game.evaluateJavascript(back, handled -> {
+            if (!"true".equals(handled) && !isFinishing()) {
+                new AlertDialog.Builder(this).setTitle("Close Salpakan?").setMessage("Any match in progress will end.")
                     .setNegativeButton("Keep playing", null).setPositiveButton("Exit", (d,w) -> finish()).show();
             }
         });

@@ -56,7 +56,7 @@ void playTestWhenReady(HWND window) {
             event->get_IsSuccess(&ok);
             const auto test = resourceText(103);
             if (!ok || test.empty()) { fail(window, L"Unable to load the packaged board or its test."); return S_OK; }
-            auto script = test + L"\nif (document.querySelector('#board-mount .cell') && !window.nativePlaytest) void playNativeMatches();";
+            auto script = test + L"\nif (document.querySelector('#settings[open] #mode-ai') && !window.nativePlaytest) void playNativeMatches();";
             if (FAILED(page->ExecuteScript(script.c_str(), nullptr))) {
                 fail(window, L"Unable to start the native playthrough."); return S_OK;
             }

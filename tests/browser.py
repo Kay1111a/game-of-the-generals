@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "test-results"
 OUT.mkdir(exist_ok=True)
 results, errors = [], []
-SEED = """Math.random = (() => { let s = 3; return () => ((s = (Math.imul(s,1664525)+1013904223) >>> 0) / 2**32); })();"""
+RNG = "(s => () => ((s = (Math.imul(s,1664525)+1013904223) >>> 0) / 2**32))"
 RANKS = ["5-Star General", "4-Star General", "3-Star General", "2-Star General", "1-Star General",
          "Colonel", "Lieutenant Colonel", "Major", "Captain", "1st Lieutenant", "2nd Lieutenant",
          "Sergeant", "Private", "Spy", "Flag"]
@@ -23,10 +23,10 @@ def log(name, **values):
     print(name, json.dumps(values), flush=True)
 
 
-def open_game(browser, rel, width=1160, height=900, mobile=False):
+def open_game(browser, rel, width=1160, height=900, mobile=False, seed=3):
     context = browser.new_context(viewport={"width": width, "height": height}, has_touch=mobile,
                                   is_mobile=mobile, reduced_motion="reduce")
-    context.add_init_script(SEED)
+    context.add_init_script(f"Math.random = {RNG}({seed});")
     page = context.new_page()
     page.set_default_timeout(7000)
     page.on("pageerror", lambda error: errors.append(str(error)))
@@ -34,9 +34,11 @@ def open_game(browser, rel, width=1160, height=900, mobile=False):
     page.on("request", lambda req: errors.append("Unexpected external request: " + req.url)
             if req.url.startswith(("https:", "http:")) else None)
     page.goto((ROOT / rel).as_uri())
-    expect(page.locator(".cell")).to_have_count(72)
-    expect(page.locator(".piece")).to_have_count(21)
-    expect(page.locator("#phase-heading")).to_have_text("Set your formation")
+    expect(page.get_by_role("dialog", name="Choose a game mode")).to_be_visible()
+    expect(btn(page,"Player vs AI")).to_be_visible()
+    expect(btn(page,"Two Players")).to_be_visible()
+    expect(btn(page,"Easy")).to_be_hidden()
+    expect(page.locator(".cell, .piece, .log-list li")).to_have_count(0)
     return context, page
 
 
@@ -48,12 +50,25 @@ def cell(p, n):
     return p.locator(f'[data-cell="{n}"]')
 
 
-def select_match(p, mode, first="ivory", reveals=False):
-    btn(p, "New match").click()
-    p.get_by_role("radio", name=mode).check()
+def select_match(p, mode, first="ivory", reveals=False, difficulty="Medium"):
+    if not p.locator("#settings").is_visible():
+        btn(p,"New match").click()
+    p.get_by_text("Match options",exact=True).click()
     p.locator("#first").select_option(first)
     p.locator("#open-ranks").set_checked(reveals)
-    btn(p, "Start match").click()
+    btn(p,mode).click()
+    if mode == "Player vs AI":
+        expect(p.get_by_role("dialog",name="Choose AI difficulty")).to_be_visible()
+        expect(btn(p,"Two Players")).to_be_hidden()
+        btn(p,difficulty).click()
+        expect(p.locator("#mode-label")).to_have_text(f"Vs computer · {difficulty}")
+        expect(p.locator(".cell")).to_have_count(72)
+        expect(p.locator(".piece")).to_have_count(21)
+        expect(p.locator("#phase-heading")).to_have_text("Set your formation")
+    else:
+        expect(p.get_by_role("heading",name="Pass to Ivory")).to_be_visible()
+        expect(p.locator(".cell, .piece")).to_have_count(0)
+    expect(p.locator("#settings")).to_be_hidden()
 
 
 def pass_to(p, side, touch=False):
@@ -82,10 +97,10 @@ def move(p, a, b):
 
 def hotseat(browser):
     ctx,p=open_game(browser, "index.html", 390, 844, True)
+    select_match(p,"Two Players", reveals=True)
     btn(p,"Rules & ranks").tap()
     expect(p.locator("#ranks-list li")).to_have_count(15)
     btn(p,"Back to board").tap()
-    select_match(p,"Two players", reveals=True)
     pass_to(p,"Ivory",True)
     place(p,"Ivory","Flag",18)
     btn(p,"Lock formation").tap()
@@ -135,7 +150,7 @@ def hotseat(browser):
 def breakthroughs(browser):
     ctx,p=open_game(browser,"dist/Salpakan.html")
     for intercept in (False,True):
-        select_match(p,"Two players")
+        select_match(p,"Two Players")
         pass_to(p,"Ivory")
         place(p,"Ivory","Flag",18)
         btn(p,"Lock formation").click()
@@ -197,6 +212,7 @@ def log_events(p):
 
 def solo(browser):
     ctx,p=open_game(browser,"dist/Salpakan.html")
+    select_match(p,"Player vs AI")
     p.screenshot(path=str(OUT/"desktop-deployment.png"))
     btn(p,"Lock formation").click()
     expect(p.locator(".piece.back")).to_have_count(21)
@@ -243,6 +259,19 @@ def solo(browser):
 
 def keyboard(browser):
     ctx,p=open_game(browser,"dist/Salpakan.html",360,740)
+    expect(btn(p,"Player vs AI")).to_be_focused()
+    p.keyboard.press("Escape")
+    expect(p.get_by_role("dialog",name="Choose a game mode")).to_be_visible()
+    p.keyboard.press("Enter")
+    expect(btn(p,"Easy")).to_be_focused()
+    p.keyboard.press("Escape")
+    expect(btn(p,"Player vs AI")).to_be_focused()
+    expect(p.locator(".cell")).to_have_count(0)
+    p.keyboard.press("Enter")
+    p.keyboard.press("Tab")
+    expect(btn(p,"Medium")).to_be_focused()
+    p.keyboard.press("Enter")
+    expect(p.locator("#mode-label")).to_have_text("Vs computer · Medium")
     c=cell(p,18);c.focus()
     p.keyboard.press("ArrowRight");expect(cell(p,19)).to_be_focused()
     p.keyboard.press("ArrowUp");expect(cell(p,28)).to_be_focused()
@@ -254,7 +283,7 @@ def keyboard(browser):
     expect(piece).to_have_attribute("aria-pressed","false")
     btn(p,"Shuffle").click()
     assert p.evaluate("document.documentElement.scrollWidth <= innerWidth")
-    select_match(p,"Vs computer",first="pine")
+    select_match(p,"Player vs AI",first="pine")
     btn(p,"Lock formation").click()
     expect(p.locator("#phase-heading")).to_have_text("Ivory to move")
     expect(p.locator(".log-list li")).to_have_count(1)
@@ -262,8 +291,49 @@ def keyboard(browser):
     expect(p.locator("#phase-heading")).to_have_text("Ivory to move")
     btn(p,"Resign").click();btn(p,"Resign match").click()
     expect(p.locator("#phase-heading")).to_have_text("Pine wins")
-    log("Keyboard arrows, shuffle, 360px layout, computer opens, resignation and cancellation")
+    log("Keyboard mode and difficulty, Escape, board arrows, shuffle, 360px layout, computer opens, resignation and cancellation")
     ctx.close()
+
+
+def difficulty_at_launch(browser):
+    openings = {}
+    for level in ("Easy","Medium","Hard"):
+        ctx,p = open_game(browser,"dist/Salpakan.html",740,360,True,seed=18)
+        if level == "Easy":
+            p.screenshot(path=str(OUT/"launch-modes.png"))
+            btn(p,"Player vs AI").tap()
+            expect(btn(p,"Two Players")).to_be_hidden()
+            expect(p.locator(".cell, .piece")).to_have_count(0)
+            for name in ("Easy","Medium","Hard","Back"):
+                expect(btn(p,name)).to_be_in_viewport(ratio=1)
+            p.screenshot(path=str(OUT/"launch-difficulty.png"))
+            btn(p,"Back").tap()
+            expect(btn(p,"Player vs AI")).to_be_focused()
+        # This independent copy plays the same opening from the same random seed.
+        # All three strategies choose different moves here, so a label-only change fails.
+        expected = p.evaluate("""level => {
+            const rng = """ + RNG + """(18);
+            const g = Salpakan.newGame({mode:"solo",first:"pine",difficulty:level},rng);
+            Salpakan.seal(g,"ivory",rng); Salpakan.seal(g,"pine",rng);
+            const m = SalpakanAI.chooseMove(Salpakan.viewFor(g,"pine"),rng,level);
+            return Salpakan.coord(m.from)+" → "+Salpakan.coord(m.to);
+        }""",level.lower())
+        select_match(p,"Player vs AI",first="pine",difficulty=level)
+        btn(p,"Lock formation").click()
+        expect(p.locator("#phase-heading")).to_have_text("Ivory to move")
+        expect(p.locator(".log-list li b")).to_have_text(expected)
+        openings[level] = expected
+        btn(p,"New match").click()
+        btn(p,"Player vs AI").tap()
+        btn(p,"Back").tap()
+        btn(p,"Return to match").tap()
+        expect(p.locator(".log-list li b")).to_have_text(expected)
+        expect(p.locator("#mode-label")).to_contain_text(level)
+        expect(p.locator("#phase-heading")).to_have_text("Ivory to move")
+        assert p.evaluate("document.documentElement.scrollWidth <= innerWidth")
+        ctx.close()
+    assert len(set(openings.values())) == 3, openings
+    log("Opening menus, all three real first AI moves and cancellation preserving the match",openings=openings)
 
 
 if __name__=="__main__":
@@ -274,6 +344,7 @@ if __name__=="__main__":
         browser=pw.chromium.launch(**launch)
         print("Chromium",browser.version,flush=True)
         try:
+            difficulty_at_launch(browser)
             hotseat(browser)
             breakthroughs(browser)
             solo(browser)

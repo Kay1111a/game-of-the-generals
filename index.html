@@ -9,7 +9,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body data-launch>
   <header class="mast"><div class="mast-inner">
     <div class="brand"><span class="compass" aria-hidden="true">✥</span> Salpakan</div>
     <nav aria-label="Game"><button id="rules-top" class="ghost">Rules &amp; ranks</button><button id="new-top" class="outline">New match <span aria-hidden="true">＋</span></button></nav>
@@ -34,18 +34,30 @@
     <div id="live" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
   </main>
   <dialog id="settings" aria-labelledby="settings-title">
-    <div class="modal-head"><h2 id="settings-title">New match</h2><button class="close" aria-label="Close settings">×</button></div>
-    <form id="new-form">
-      <fieldset><legend>Opponent</legend><div class="choice"><label><input type="radio" name="mode" value="solo" checked> Vs computer</label><label><input type="radio" name="mode" value="duo"> Two players</label></div></fieldset>
-      <label class="field" id="difficulty-field">AI difficulty
-        <select id="difficulty" aria-describedby="difficulty-hint"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select>
-        <small id="difficulty-hint" class="fine"></small>
-      </label>
-      <label class="field">Opening turn<select id="first"><option value="ivory">Ivory moves first</option><option value="pine">Pine moves first</option><option value="coin">Flip a coin</option></select></label>
-      <fieldset><legend>Optional rules</legend><label class="check"><input id="open-ranks" type="checkbox"><span>Reveal challenge ranks<small>Both players can see the two ranks briefly after each challenge.</small></span></label>
-        <label class="check"><input id="tournament" type="checkbox"><span>Threefold repetition<small>Draw when the same full position and turn occur three times without a capture.</small></span></label></fieldset>
-      <p id="replace-note" class="fine"></p><button class="primary wide" type="submit">Start match</button>
-    </form>
+    <div class="picker-brand"><span aria-hidden="true">✥</span> Salpakan</div>
+    <div class="modal-head"><h2 id="settings-title">Choose a game mode</h2></div>
+    <div id="mode-step">
+      <div class="picker-choices">
+        <button id="mode-ai" class="pick" aria-labelledby="solo-title" aria-describedby="solo-hint"><strong id="solo-title">Player vs AI</strong><small id="solo-hint">Play as Ivory against the computer.</small></button>
+        <button id="mode-duo" class="pick" aria-labelledby="duo-title" aria-describedby="duo-hint"><strong id="duo-title">Two Players</strong><small id="duo-hint">Share one device and take turns in private.</small></button>
+      </div>
+      <details id="match-options">
+        <summary>Match options</summary>
+        <label class="field">Opening turn<select id="first"><option value="ivory">Ivory moves first</option><option value="pine">Pine moves first</option><option value="coin">Flip a coin</option></select></label>
+        <fieldset><legend>Optional rules</legend><label class="check"><input id="open-ranks" type="checkbox"><span>Reveal challenge ranks<small>Both players can see the two ranks briefly after each challenge.</small></span></label>
+          <label class="check"><input id="tournament" type="checkbox"><span>Threefold repetition<small>Draw when the same full position and turn occur three times without a capture.</small></span></label></fieldset>
+      </details>
+      <button id="return-match" class="outline" hidden>Return to match</button>
+    </div>
+    <div id="difficulty-step" hidden>
+      <div class="picker-choices">
+        <button class="pick" data-difficulty="easy" aria-labelledby="easy-title" aria-describedby="easy-hint"><strong id="easy-title">Easy</strong><small id="easy-hint">A practice opponent that takes chances.</small></button>
+        <button class="pick" data-difficulty="medium" aria-labelledby="medium-title" aria-describedby="medium-hint"><strong id="medium-title">Medium</strong><small id="medium-hint">Remembers challenges and looks for favorable trades.</small></button>
+        <button class="pick" data-difficulty="hard" aria-labelledby="hard-title" aria-describedby="hard-hint"><strong id="hard-title">Hard</strong><small id="hard-hint">Tracks remaining ranks and weighs your next reply.</small></button>
+      </div>
+      <button id="back-mode" class="outline">Back</button>
+    </div>
+    <p id="replace-note" class="fine" hidden>Starting a new match replaces the current board.</p>
   </dialog>
   <dialog id="rulebook" aria-labelledby="rules-title">
     <div class="modal-head"><h2 id="rules-title">Rules &amp; ranks</h2><button class="close" aria-label="Close rulebook">×</button></div>
