@@ -8,6 +8,27 @@ on:
 permissions:
   contents: read
 jobs:
+  browser-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build the offline document and install the test browser
+        run: |
+          python tools/build.py
+          python -m pip install playwright==1.55.0
+          python -m playwright install --only-shell chromium
+      - name: Test rules, AI choices and visible game controls
+        run: python tests/browser_qa.py
+      - name: Keep viewport evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SnakesAndLadders-layouts
+          path: test-results/*.png
   windows-app:
     runs-on: windows-2025
     timeout-minutes: 16
