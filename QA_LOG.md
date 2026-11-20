@@ -1,5 +1,57 @@
 # QA log
 
+## Version 1.2.0 · Choose a mode at launch
+
+Fresh launches open the opponent menu with zero board squares and zero pieces. **Player vs AI** opens the three difficulty choices. **Two Players** starts with **Pass to Ivory** and keeps both formations concealed until the correct player reveals the board.
+
+### First-move regression
+
+The browser test starts each difficulty from the same formation with Pine moving first (seed 18). It compares the visible first move to an independent copy of the rules and selected strategy. Each level makes a different opening in this position.
+
+| Selected button | First move in the game |
+| --- | --- |
+| Easy | F7 → E7 |
+| Medium | H6 → H5 |
+| Hard | H8 → H7 |
+
+The tests also open **New match** after Pine moves, back out of the difficulty choice and return to the existing board. The mode, move log and turn survive. On a 740 × 360 landscape screen all three choices and Back fit in view. The 360-pixel keyboard and 390-pixel shared-device tests exercise the portrait layout.
+
+### Issues found during playtesting
+
+**MENU-01 · Medium · Keyboard in Chromium on Windows and Linux**
+
+1. Open a fresh game and press Escape.
+2. Press Enter on **Player vs AI**, then press Escape from the difficulty screen.
+
+Expected the mode chooser to regain focus. The browser could dismiss the entire dialog on the second Escape. The picker now handles Escape directly and controls its own dismissal. The same key sequence passed on both operating systems. Files changed in `index.html` and `src/app.js`. [Initial reproduction](https://github.com/Kay1111a/game-of-the-generals/actions/runs/44738655972)
+
+**QA-02 · Medium · Android instrumentation**
+
+1. Boot a fresh Pixel 6 emulator, install the APK and start the touch test.
+2. Send the first tap as soon as the WebView reports its first rendered frame.
+
+Android rejected the tap because it would have reached a window owned by another process. The test now waits for the game to own focus, hit-tests the rendered button and sends a touchscreen event through Android. Each tap must still produce the expected screen. Files changed in `native/android/app/src/androidTest/java/io/github/kay1111a/salpakan/BoardTest.java` and `tests/native_android.sh`. [Reproduction](https://github.com/Kay1111a/game-of-the-generals/actions/runs/44738956177)
+
+On retest the installed APK accepted a touchscreen tap on **Player vs AI**, Android Back returned to the mode choices with zero pieces visible, and tapping **Hard** after reselecting AI opened the 72-square deployment board. Restarting the activity reopened the mode chooser. Both issues above passed their original regression on the final build.
+
+### Release playtests
+
+| Command | Result |
+| --- | --- |
+| `node --test tests/game.test.cjs tests/difficulty.test.cjs` | All 21 rules and strategy tests passed. |
+| `python tools/build.py` followed by `python tests/browser.py` | All seven reported checks passed on Windows and Linux. No browser errors or external HTTP requests were recorded. |
+| `python tests/native_windows.py` | The Windows x64 EXE finished Easy in 67 individual moves, Medium in 123, Hard in 121 and local two-player in 5. |
+| `bash tests/native_android.sh` | The APK installed on an Android 15 Pixel 6 emulator and finished the same four games with Wi-Fi and mobile data disabled. The Android runner reported `OK (1 test)`. |
+
+The tested Windows and Android downloads contain the identical 152,018-byte game document. Its SHA-256 is `6f3da295195034869ee4ca35996002bbb4fc7e50c8ce3d5ca41e60322c06b27e`. Both package hashes matched the GitHub release assets. Android device coverage used an emulator.
+
+| Download | Bytes | SHA-256 |
+| --- | ---: | --- |
+| Salpakan.exe | 338944 | `7c9aa970a7055da2a20c44033cd59c6d4012bc89230abe271a1bef7865b3606a` |
+| Salpakan.apk | 80266 | `2d81ad46822c830207cfcd74de924f44fbc6d94ed98957336ee8799a08ef44a9` |
+
+[Version 1.2.0 release](https://github.com/Kay1111a/game-of-the-generals/releases/tag/v1.2.0) · [Final build and platform playtests](https://github.com/Kay1111a/game-of-the-generals/actions/runs/44739827715)
+
 ## Version 1.1.0 · Windows and Android
 
 The game ships as a Windows x64 executable and a sideloadable Android APK. Both embed the same offline board and opponents. The original rules and browser checks still run in CI. The full suite passed 21 engine tests, including the original 96 self-play matches.

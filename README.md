@@ -4,7 +4,7 @@ An offline edition of the Filipino hidden-rank board game. Arrange 21 pieces, ch
 
 ## Windows and Android apps
 
-[Download the latest release](https://github.com/Kay1111a/game-of-the-generals/releases/latest). Open **Salpakan.exe** on Windows 10/11 x64, or install **Salpakan.apk** on Android 9 or later. Each contains the full game and plays offline. Windows uses the Microsoft Edge WebView2 Runtime. Android needs System WebView or Chrome version 105 or newer. The Windows app is unsigned. The APK uses a development signing certificate for sideloading. A build signed with a different development certificate requires reinstalling the app.
+[Download the latest release](https://github.com/Kay1111a/game-of-the-generals/releases/latest). Open **Salpakan.exe** on Windows 10/11 x64, or install **Salpakan.apk** on Android 9 or later. Each contains the full game and plays offline. Windows uses the Microsoft Edge WebView2 Runtime. Android needs System WebView or Chrome version 105 or newer. The Windows app is unsigned. The APK uses a development signing certificate for sideloading. To upgrade from the published Android v1.1.0 to v1.2.0, uninstall the old APK first because those releases use different signing certificates.
 
 Opening the game shows **Player vs AI** and **Two Players**. Choose **Player vs AI** to open the difficulty screen. Selecting **Easy**, **Medium**, or **Hard** starts deployment, and Pine uses that level from its first move. **Two Players** goes straight to the private **Pass to Ivory** handoff. Both players share the same device.
 
