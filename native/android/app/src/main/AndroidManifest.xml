@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:label="Salpakan" android:icon="@drawable/ic_salpakan"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:allowBackup="false" android:usesCleartextTraffic="false"
+        android:enableOnBackInvokedCallback="false">
+        <activity android:name=".GameActivity" android:exported="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|keyboardHidden|screenLayout">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

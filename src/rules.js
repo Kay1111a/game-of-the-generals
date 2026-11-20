@@ -56,6 +56,7 @@ const Salpakan = (() => {
   function newGame(options = {}, random = Math.random) {
     const settings = {
       mode: options.mode === "duo" ? "duo" : "solo",
+      difficulty: ["easy", "medium", "hard"].includes(options.difficulty) ? options.difficulty : "medium",
       first: [IVORY, PINE, "coin"].includes(options.first) ? options.first : IVORY,
       open: options.open === true, tournament: options.tournament === true,
     };

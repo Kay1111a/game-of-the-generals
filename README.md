@@ -2,7 +2,13 @@
 
 An offline edition of the Filipino hidden-rank board game. Arrange 21 pieces, challenge the other army one square at a time, and protect your Flag. Play against the computer or take turns with a friend on one screen.
 
-## Play on a PC or phone
+## Windows and Android apps
+
+[Download the latest release](https://github.com/Kay1111a/game-of-the-generals/releases/latest). Open **Salpakan.exe** on Windows 10/11 x64, or install **Salpakan.apk** on Android 9 or later. Each contains the full game and plays offline. Windows uses the Microsoft Edge WebView2 Runtime. Android needs System WebView or Chrome version 105 or newer. The Windows app is unsigned. The APK uses a development signing certificate for sideloading. A build signed with a different development certificate requires reinstalling the app.
+
+Choose **New match → Vs computer → AI difficulty**. **Easy** varies its moves and occasionally takes risks. **Medium** remembers challenge outcomes and looks for favorable exchanges. **Hard** also tracks remaining ranks, considers the opponent’s best adjacent recapture and looks for a safe route for its Flag. Medium is the default. Play Again keeps the selected difficulty. The difficulty control is hidden for two-player matches.
+
+## Play the browser edition
 
 1. Download the repository ZIP from **Code → Download ZIP** and extract it.
 2. Open **index.html** in a modern browser. Keep the extracted files together.
@@ -29,7 +35,7 @@ The computer receives its own ranks, enemy locations, and outcomes of past chall
 
 ## Build and test
 
-Use Node.js 22+ and Python 3.10+ for development. Playing requires only a browser.
+Use Node.js 22+ and Python 3.10+ for development. The browser edition runs offline.
 
 ```sh
 node --test tests/game.test.cjs
@@ -43,9 +49,17 @@ On Windows, `py` can be used in place of `python`. The build creates **dist/Salp
 
 | File | Purpose |
 | --- | --- |
+| `native/windows`, `native/android` | Desktop and mobile app hosts and build projects |
 | `src/rules.js` | Deployment, legal moves, challenges, victory, draw handling and player-specific views |
 | `src/opponent.js` | AI move selection and memory of observed challenges |
 | `src/app.js` | Board, private handoffs, setup, turn controls and move log |
 | `index.html`, `styles.css` | Interface, rules panel, responsive board and piece designs |
 | `tests/`, `QA_LOG.md` | Automated checks, played scenarios, results and fixes |
 | `assets/FONT-LICENSE.txt` | SIL Open Font License for the bundled Instrument Serif typeface |
+
+
+## Build the native apps
+
+- **Windows.** Install Visual Studio 2022 or later with Desktop development with C++, the Windows SDK, CMake, the NuGet CLI and Python 3. From a PowerShell prompt run `./native/windows/build.ps1`. The portable executable is written to `dist/Salpakan.exe`. The build embeds the game and statically links the WebView2 loader.
+- **Android.** Use JDK 17, Android SDK platform 35, Gradle 8.9 and Python 3 on your PATH. Run `gradle -p native/android :app:assembleRelease`. The installable APK is in `native/android/app/build/outputs/apk/release/`. The sideload build uses the local Android debug keystore. Keep your own signing key for store releases and future updates.
+- **Playtests.** Run `node --test tests/game.test.cjs tests/difficulty.test.cjs` for the rules and paired difficulty tournament. The Playtest workflow builds both apps, plays full matches against all three levels and checks shared-device play in the installed apps. A release commit marked `[release]` publishes both verified packages using the version in `native/VERSION`.

@@ -786,3 +786,7 @@ select {
     margin: 13px 12px;
   }
 }
+
+#difficulty-field { display: block; margin: 12px 0; }
+#difficulty-field[hidden] { display: none; }
+#difficulty-hint { display: block; font-weight: 400; color: #52605a; }

@@ -30,9 +30,22 @@
   const phase = () => g.phase === "setup" ? "Deployment" : g.phase === "over" ? "Match finished" : "In play";
   function report(s) { id("live").textContent = s; }
   function modalOpen() { return Boolean(document.querySelector("dialog[open]")); }
-  function chooseSettings() {
+  const difficultyHint = {
+    easy: "A practice opponent that explores and takes occasional chances.",
+    medium: "Remembers challenges and looks for favorable exchanges.",
+    hard: "Also weighs likely replies and which enemy ranks are still in play.",
+  };
+  function updateDifficultyField() {
+    const solo = id("new-form").elements.mode.value === "solo";
+    id("difficulty-field").hidden = !solo;
+    id("difficulty").disabled = !solo;
+    id("difficulty-hint").textContent = difficultyHint[id("difficulty").value];
+  }
+  function chooseSettings(mode = g.settings.mode) {
     const f = id("new-form");
-    f.elements.mode.value = g.settings.mode;
+    f.elements.mode.value = mode;
+    id("difficulty").value = g.settings.difficulty;
+    updateDifficultyField();
     id("first").value = g.settings.first;
     id("open-ranks").checked = g.settings.open;
     id("tournament").checked = g.settings.tournament;
@@ -70,7 +83,7 @@
     const match = g;
     timer = setTimeout(() => {
       if (g !== match || g.phase !== "play" || g.turn !== R.PINE || cover || modalOpen()) return;
-      const move = AI.chooseMove(R.viewFor(g, R.PINE));
+      const move = AI.chooseMove(R.viewFor(g, R.PINE), Math.random, g.settings.difficulty);
       if (move) makeMove(R.PINE, move.from, move.to);
     }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 20 : 480);
   }
@@ -201,7 +214,7 @@
     const bottom = !cover && viewer ? viewer : R.IVORY, top = R.other(bottom);
     setSideLabel(id("opponent-label"),top,caps(top) + (g.settings.mode === "solo" && top === R.PINE ? " · Computer" : ""));
     setSideLabel(id("player-label"),bottom,caps(bottom) + (g.settings.mode === "solo" ? " · You" : ""));
-    id("mode-label").textContent = g.settings.mode === "solo" ? "Vs computer" : "Local two-player";
+    id("mode-label").textContent = g.settings.mode === "solo" ? "Vs computer · " + caps(g.settings.difficulty) : "Local two-player";
     id("turn-label").textContent = g.phase === "play" ? "Move " + (g.history.length+1) : phase();
     id("phase-label").textContent = phase();
     let heading, help;
@@ -212,13 +225,13 @@
     } else if (g.phase === "over") {
       heading = g.result.winner ? caps(g.result.winner)+" wins" : "Match drawn";
       help = endings[g.result.reason];
-      actions.append(button("Play again",()=>start({...g.settings}),"primary"),button("Change settings",chooseSettings));
+      actions.append(button("Play again",()=>start({...g.settings}),"primary"),button("Change settings",()=>chooseSettings()));
     } else if (g.phase === "setup") {
       heading = "Set your formation"; help = "Select a piece, then a home square to move or swap it. Lock when all 21 are where you want them.";
       actions.append(button("Lock formation",lock,"primary"),button("Shuffle",()=>{
         R.shuffle(g,viewer); selected=null; note="Formation shuffled."; render(); report(note);
       }),button(g.settings.mode === "solo" ? "Two players…" : "Vs computer…",()=>{
-        chooseSettings(); id("new-form").elements.mode.value = g.settings.mode === "solo" ? "duo" : "solo";
+        chooseSettings(g.settings.mode === "solo" ? "duo" : "solo");
       }));
     } else {
       const thinking = g.settings.mode === "solo" && g.turn === R.PINE;
@@ -250,7 +263,8 @@
     if (!R.neighbors(i).includes(j)) return;
     focusSquare=j; cell.tabIndex=-1; const next=mount.querySelector('[data-cell="'+j+'"]'); next.tabIndex=0; next.focus();
   });
-  id("new-top").addEventListener("click",chooseSettings);
+  id("new-top").addEventListener("click",()=>chooseSettings());
+  id("new-form").addEventListener("change",updateDifficultyField);
   for (const key of ["rules-top","rules-side"]) id(key).addEventListener("click",()=>id("rulebook").showModal());
   for (const b of document.querySelectorAll("dialog .close")) b.addEventListener("click",()=>b.closest("dialog").close());
   id("cancel-resign").addEventListener("click",()=>id("confirm").close());
@@ -258,7 +272,7 @@
   for (const d of document.querySelectorAll("dialog")) d.addEventListener("close",scheduleAI);
   id("new-form").addEventListener("submit",e=>{
     e.preventDefault();
-    const opts={mode:e.currentTarget.elements.mode.value,first:id("first").value,open:id("open-ranks").checked,tournament:id("tournament").checked};
+    const opts={mode:e.currentTarget.elements.mode.value,difficulty:id("difficulty").value,first:id("first").value,open:id("open-ranks").checked,tournament:id("tournament").checked};
     id("settings").close(); start(opts);
   });
   for (const r of R.ranks) {

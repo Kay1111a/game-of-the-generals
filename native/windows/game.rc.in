@@ -1,0 +1,25 @@
+#include <windows.h>
+101 RCDATA "@GAME_HTML@"
+102 ICON "@CMAKE_CURRENT_SOURCE_DIR@/salpakan.ico"
+1 VERSIONINFO
+FILEVERSION 1,1,0,0
+PRODUCTVERSION 1,1,0,0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "FileDescription", "Salpakan - Game of the Generals"
+            VALUE "ProductName", "Salpakan"
+            VALUE "ProductVersion", "1.1.0"
+            VALUE "FileVersion", "1.1.0"
+            VALUE "OriginalFilename", "Salpakan.exe"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END
