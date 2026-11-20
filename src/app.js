@@ -25,6 +25,7 @@
   }
 
   let g = null, viewer = R.IVORY, selected = null, cover = null, note = "", timer = null;
+  let draft = null, brush = null;
   let focusSquare = 18;
   const mount = id("board-mount"), actions = id("actions");
   const phase = () => g.phase === "setup" ? "Deployment" : g.phase === "over" ? "Match finished" : "In play";
@@ -62,6 +63,7 @@
   }
   function start(settings) {
     clearTimeout(timer); timer = null;
+    draft = null; brush = null;
     g = R.newGame(settings); viewer = R.IVORY; selected = null; note = ""; focusSquare = 18;
     cover = settings.mode === "duo" ? {kind:"pass", side:R.IVORY} : null;
     document.body.removeAttribute("data-launch");
@@ -115,6 +117,16 @@
   }
   function square(i) {
     if (cover || !viewer || g.phase === "over" || (g.phase === "play" && viewer !== g.turn)) return;
+    if (draft) {
+      if (!R.home(viewer,i)) note = "Choose a square in your three home rows.";
+      else {
+        draft[i] = brush;
+        focusSquare = i;
+        if (brush && remaining(brush) === 0) brush = R.ranks.find(r=>remaining(r.id)>0)?.id ?? null;
+        note = "";
+      }
+      render(); report(id("guidance").textContent); return;
+    }
     const piece = R.viewFor(g, viewer).board[i];
     note = "";
     if (i === selected) selected = null;
@@ -128,6 +140,27 @@
     } else note = selected === null ? "Choose one of your own pieces first." : "Choose a marked square next to your piece.";
     focusSquare = i;
     render(); report(id("guidance").textContent);
+  }
+  function remaining(rank) {
+    return R.byId[rank].count - draft.filter(piece=>piece === rank).length;
+  }
+  function manualControls(placed) {
+    const tray = el("select");
+    tray.setAttribute("aria-label","Piece to place");
+    for (const r of R.ranks) {
+      const left = remaining(r.id);
+      if (left) tray.add(new Option(r.name+" ("+left+" left)",r.id));
+    }
+    tray.add(new Option("Remove a piece",""));
+    tray.value = brush ?? "";
+    tray.onchange = ()=>{ brush=tray.value || null; note=""; };
+    const finish = button("Use formation",()=>{
+      R.deploy(g,viewer,draft); draft=null; note="Manual formation ready."; render(); report(note);
+    },"primary");
+    finish.disabled = placed !== 21;
+    actions.append(tray,finish,button("Cancel placement",()=>{
+      draft=null; note="Previous formation restored."; render(); report(note);
+    }));
   }
   function axes(values, cls) {
     const a = el("div", cls);
@@ -217,6 +250,7 @@
     id("back-setup").hidden = g.phase !== "setup";
     const wasBoard = mount.contains(document.activeElement);
     const view = R.viewFor(g,cover ? null : viewer);
+    if (draft && !cover) view.board = draft.map(rank=>rank ? {side:viewer,rank} : null);
     mount.replaceChildren(cover ? curtain() : board(view));
     if (wasBoard) {
       const next = cover ? mount.querySelector(".curtain button") : mount.querySelector('[tabindex="0"]');
@@ -237,9 +271,17 @@
       heading = g.result.winner ? caps(g.result.winner)+" wins" : "Match drawn";
       help = endings[g.result.reason];
       actions.append(button("Play again",()=>start({...g.settings}),"primary"),button("Change settings",()=>chooseSettings()));
+    } else if (draft) {
+      const placed = draft.filter(Boolean).length;
+      heading = "Manual placement · "+placed+"/21";
+      help = "Choose a piece, then tap a home square. Replacing a piece returns it to the list.";
+      manualControls(placed);
     } else if (g.phase === "setup") {
       heading = "Set your formation"; help = "Select a piece, then a home square to move or swap it. Lock when all 21 are where you want them.";
-      actions.append(button("Lock formation",lock,"primary"),button("Shuffle",()=>{
+      actions.append(button("Lock formation",lock,"primary"),button("Manual placement",()=>{
+        draft=Array(R.SIZE).fill(null); brush=R.ranks[0].id; selected=null; note=""; render();
+        actions.querySelector("select").focus(); report(id("guidance").textContent);
+      }),button("Shuffle",()=>{
         R.shuffle(g,viewer); selected=null; note="Formation shuffled."; render(); report(note);
       }),button("Arrange by rank",()=>{
         const squares = [...mount.querySelectorAll("[data-cell]")].map(c=>Number(c.dataset.cell))

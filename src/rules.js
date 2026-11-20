@@ -77,6 +77,20 @@ const Salpakan = (() => {
     assertSetup(g, side);
     formation(g.board, side, random, side === PINE && g.settings.mode === "solo");
   }
+  function deploy(g, side, layout) {
+    assertSetup(g, side);
+    requireRule(Array.isArray(layout) && layout.length === SIZE, "Invalid formation.");
+    const counts = new Map();
+    layout.forEach((rank,i)=>{
+      if (rank === null) return;
+      requireRule(home(side,i) && Object.hasOwn(byId,rank), "Use your home rows.");
+      counts.set(rank,(counts.get(rank) || 0)+1);
+    });
+    requireRule(ranks.every(r=>counts.get(r.id) === r.count), "Place your entire army first.");
+    layout.forEach((rank,i)=>{
+      if (home(side,i)) g.board[i] = rank ? {side,rank} : null;
+    });
+  }
   function arrange(g, side, from, to) {
     assertSetup(g, side);
     requireRule(home(side, from) && home(side, to) && g.board[from]?.side === side, "Use a piece and two squares in your home rows.");
@@ -182,7 +196,7 @@ const Salpakan = (() => {
     return {...publicEvent(e), attacker: e.attackRank, defender: e.defendRank};
   }
   return Object.freeze({FILES, ROWS, SIZE, IVORY, PINE, ranks: Object.freeze(ranks), byId, coord, row, file,
-    home, farRow, other, neighbors, challenge, newGame, arrange, shuffle, seal, moves, targets,
+    home, farRow, other, neighbors, challenge, newGame, deploy, arrange, shuffle, seal, moves, targets,
     move, offerDraw, answerDraw, resign, viewFor, revealedChallenge});
 })();
 

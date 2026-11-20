@@ -42,6 +42,33 @@ async function playNativeMatches() {
     action("Reveal " + side + " board");
     check(cells().length === 72, "board size after reveal");
   }
+  function manualDeployment(side) {
+    const original=readBoard();
+    const home=side==="ivory" ? 0 : 45;
+    action("Manual placement");
+    check(!find(".piece"),"manual starts empty");
+    cell(32).click();
+    check(!find(".piece"),"middle rows cannot be used");
+    const selectRank = rank=>{
+      const tray=find('[aria-label="Piece to place"]');
+      tray.value=rank;
+      tray.dispatchEvent(new Event("change"));
+    };
+    selectRank("flag"); cell(home).click();
+    selectRank("spy"); cell(home).click();
+    check(readBoard()[home].rank==="spy","replace placed piece");
+    selectRank(""); cell(home).click();
+    check(!find(".piece"),"return piece to tray");
+    action("Cancel placement");
+    check(JSON.stringify(original)===JSON.stringify(readBoard()),"cancel restores starting formation");
+    action("Manual placement");
+    check([...document.querySelectorAll("button")].find(b=>b.textContent==="Use formation").disabled,"incomplete army");
+    original.forEach((piece,i)=>{
+      if (piece?.side===side) {selectRank(piece.rank);cell(i).click();}
+    });
+    action("Use formation");
+    check(JSON.stringify(original)===JSON.stringify(readBoard()),"manual layout committed");
+  }
   function place(side, rank, to) {
     const own = cells().find(c => c.getAttribute("aria-label").endsWith(", " + side + " " + rank));
     check(own, "missing " + rank);
@@ -97,6 +124,7 @@ async function playNativeMatches() {
       Math.random = () => ((seed = (Math.imul(seed,1664525)+1013904223) >>> 0) / 2**32);
       settings("solo",level);
       check(find("#mode-label").textContent.toLowerCase().includes(level), "wrong level displayed");
+      if (level==="easy") manualDeployment("ivory");
       action("Lock formation");
       check(document.querySelectorAll(".back").length === 21,"enemy setup visibility");
       const history=[], own=new Map();
@@ -119,7 +147,7 @@ async function playNativeMatches() {
     report.active="local two-player";
     settings("duo");
     reveal("Ivory"); place("Ivory","Flag",18); action("Lock formation");
-    reveal("Pine"); place("Pine","Flag",45); place("Pine","Sergeant",53); action("Lock formation");
+    reveal("Pine"); manualDeployment("pine"); place("Pine","Flag",45); place("Pine","Sergeant",53); action("Lock formation");
     reveal("Ivory");
     for (const [from,to,next] of [[18,27,"Pine"],[53,44,"Ivory"],[27,36,"Pine"],[44,53,"Ivory"],[36,45,null]]) {
       move(from,to); if (next) reveal(next);
