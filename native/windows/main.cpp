@@ -4,23 +4,37 @@
 #include <wrl.h>
 #include <WebView2.h>
 #include <string>
+#include <cwchar>
 using Microsoft::WRL::Callback;
 using Microsoft::WRL::ComPtr;
 
 namespace {
 ComPtr<ICoreWebView2Controller> controller;
 ComPtr<ICoreWebView2> web;
+bool selfTest = false, checking = false;
+int exitCode = 0;
+constexpr UINT_PTR reportTimer = 1;
+
+void writeReport(const std::wstring& text) {
+    const int count = WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
+    std::string line(count, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), line.data(), count, nullptr, nullptr);
+    line.push_back('\n');
+    DWORD written = 0;
+    WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), line.data(), static_cast<DWORD>(line.size()), &written, nullptr);
+}
 
 void fail(HWND window, const wchar_t* message) {
     if (IsWindow(window)) {
-        MessageBoxW(window, message, L"Salpakan", MB_OK | MB_ICONERROR);
+        if (selfTest) { exitCode = 1; writeReport(message); }
+        else MessageBoxW(window, message, L"Salpakan", MB_OK | MB_ICONERROR);
         DestroyWindow(window);
     }
 }
 
-std::wstring gameHtml() {
+std::wstring resourceText(int id) {
     HMODULE app = GetModuleHandleW(nullptr);
-    HRSRC source = FindResourceW(app, MAKEINTRESOURCEW(101), RT_RCDATA);
+    HRSRC source = FindResourceW(app, MAKEINTRESOURCEW(id), RT_RCDATA);
     if (!source) return {};
     HGLOBAL data = LoadResource(app, source);
     const char* bytes = data ? static_cast<const char*>(LockResource(data)) : nullptr;
@@ -31,6 +45,46 @@ std::wstring gameHtml() {
     std::wstring text(count, L'\0');
     MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, bytes, size, text.data(), count);
     return text;
+}
+
+// Only the explicit self-test switch exercises this fixed, bundled scenario.
+void playTestWhenReady(HWND window) {
+    EventRegistrationToken token{};
+    auto loaded = Callback<ICoreWebView2NavigationCompletedEventHandler>(
+        [window](ICoreWebView2* page, ICoreWebView2NavigationCompletedEventArgs* event) -> HRESULT {
+            BOOL ok = FALSE;
+            event->get_IsSuccess(&ok);
+            const auto test = resourceText(103);
+            if (!ok || test.empty()) { fail(window, L"Unable to load the packaged board or its test."); return S_OK; }
+            auto script = test + L"\nif (document.querySelector('#board-mount .cell') && !window.nativePlaytest) void playNativeMatches();";
+            if (FAILED(page->ExecuteScript(script.c_str(), nullptr))) {
+                fail(window, L"Unable to start the native playthrough."); return S_OK;
+            }
+            SetTimer(window, reportTimer, 250, nullptr);
+            return S_OK;
+        });
+    if (FAILED(web->add_NavigationCompleted(loaded.Get(), &token))) {
+        fail(window, L"Unable to observe the native board.");
+    }
+}
+
+void readPlaytest(HWND window) {
+    if (checking || !web) return;
+    checking = true;
+    auto callback = Callback<ICoreWebView2ExecuteScriptCompletedHandler>(
+        [window](HRESULT status, LPCWSTR json) -> HRESULT {
+            checking = false;
+            if (FAILED(status)) { fail(window, L"Unable to read native playtest progress."); return S_OK; }
+            if (!json || std::wcscmp(json, L"null") == 0) return S_OK;
+            KillTimer(window, reportTimer);
+            writeReport(json);
+            exitCode = std::wcsstr(json, L"\"error\"") ? 1 : 0;
+            PostMessageW(window, WM_CLOSE, 0, 0);
+            return S_OK;
+        });
+    if (FAILED(web->ExecuteScript(L"window.nativePlaytest && (window.nativePlaytest.done || window.nativePlaytest.error) ? window.nativePlaytest : null", callback.Get()))) {
+        fail(window, L"Unable to inspect the native playthrough.");
+    }
 }
 
 void resize(HWND window) {
@@ -72,7 +126,9 @@ void startGame(HWND window) {
                         settings->put_IsStatusBarEnabled(FALSE);
                     }
                     resize(window);
-                    const auto html = gameHtml();
+                    if (selfTest) playTestWhenReady(window);
+                    if (!IsWindow(window)) return S_OK;
+                    const auto html = resourceText(101);
                     if (html.empty() || FAILED(web->NavigateToString(html.c_str()))) {
                         fail(window, L"The embedded game could not be opened.");
                     } else {
@@ -93,6 +149,9 @@ void startGame(HWND window) {
 LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
     case WM_SIZE: resize(hwnd); return 0;
+    case WM_TIMER:
+        if (wp == reportTimer && selfTest) readPlaytest(hwnd);
+        return 0;
     case WM_SETFOCUS:
         if (controller) controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
         return 0;
@@ -104,13 +163,15 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     }
     case WM_DESTROY:
         if (controller) controller->Close();
-        web.Reset(); controller.Reset(); PostQuitMessage(0); return 0;
+        web.Reset(); controller.Reset(); PostQuitMessage(exitCode); return 0;
     default: return DefWindowProcW(hwnd, msg, wp, lp);
     }
 }
 }
 
-int WINAPI wWinMain(HINSTANCE app, HINSTANCE, PWSTR, int show) {
+int WINAPI wWinMain(HINSTANCE app, HINSTANCE, PWSTR commandLine, int show) {
+    selfTest = commandLine && std::wcscmp(commandLine, L"--self-test") == 0;
+    exitCode = selfTest ? 1 : 0;
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     if (FAILED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED))) return 1;
     WNDCLASSW cls{};

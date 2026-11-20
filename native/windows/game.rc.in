@@ -1,5 +1,6 @@
 #include <windows.h>
 101 RCDATA "@GAME_HTML@"
+103 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/../../tests/native/play.js"
 102 ICON "@CMAKE_CURRENT_SOURCE_DIR@/salpakan.ico"
 1 VERSIONINFO
 FILEVERSION 1,1,0,0

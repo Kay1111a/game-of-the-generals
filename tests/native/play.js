@@ -113,6 +113,9 @@ async function playNativeMatches() {
     }
     check(heading()==="Ivory wins" && find("#guidance").textContent.includes("captured"), "Flag-on-Flag result");
     report.matches.push({mode:"two players",plies:5,result:heading()});
+    report.externalResources = performance.getEntriesByType("resource")
+      .filter(entry => /^https?:/.test(entry.name)).map(entry => entry.name);
+    check(report.externalResources.length === 0, "external resource request");
     report.done=true;
   } catch (error) { report.error=String(error.stack || error); }
   finally { Math.random=actualRandom; }

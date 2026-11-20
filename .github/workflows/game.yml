@@ -62,7 +62,6 @@ jobs:
               Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile $bootstrap
               Start-Process $bootstrap -ArgumentList '/silent','/install' -Wait
           }
-          python -m pip install playwright==1.55.0
       - name: Play on the packaged EXE with its WebView offline
         run: python tests/native_windows.py
       - uses: actions/upload-artifact@v4
