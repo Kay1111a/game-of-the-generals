@@ -205,7 +205,7 @@ def solo(browser):
     btn(p,"Offer draw").click()
     expect(p.locator("#guidance")).to_contain_text("computer declined")
     for turn in range(400):
-        p.wait_for_function("document.querySelector('#phase-heading').textContent !== 'Computer’s turn'")
+        expect(p.locator("#phase-heading")).not_to_have_text("Computer’s turn")
         if btn(p,"Play again").count():
             break
         expect(p.locator("#phase-heading")).to_have_text("Ivory to move")
