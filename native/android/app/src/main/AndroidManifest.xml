@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:label="Salpakan" android:icon="@drawable/ic_salpakan"
+    <application android:label="Snakes and Ladders" android:icon="@drawable/ic_snakesladders"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:allowBackup="false" android:usesCleartextTraffic="false"
         android:enableOnBackInvokedCallback="false">

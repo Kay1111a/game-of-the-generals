@@ -1,4 +1,4 @@
-package io.github.kay1111a.salpakan;
+package io.github.kay1111a.snakesladders;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -35,7 +35,7 @@ public final class GameActivity extends Activity {
         setContentView(frame);
         PackageInfo engine = WebView.getCurrentWebViewPackage();
         if (engine == null || majorVersion(engine.versionName) < 105) {
-            problem("Update Android System WebView or Chrome on this device, then open Salpakan again.");
+            problem("Update Android System WebView or Chrome on this device, then open SnakesAndLadders again.");
             return;
         }
         game = new WebView(this);
@@ -49,15 +49,15 @@ public final class GameActivity extends Activity {
         game.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return true; }
         });
-        try (InputStream input = getAssets().open("Salpakan.html")) {
+        try (InputStream input = getAssets().open("SnakesAndLadders.html")) {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             byte[] buffer = new byte[8192];
             int count;
             while ((count = input.read(buffer)) != -1) out.write(buffer, 0, count);
-            String base = "https://salpakan.invalid/";
+            String base = "https://snakesladders.invalid/";
             game.loadDataWithBaseURL(base, new String(out.toByteArray(), StandardCharsets.UTF_8), "text/html", "UTF-8", base);
         } catch (IOException error) {
-            problem("The installed game data could not be read. Reinstall Salpakan to restore it.");
+            problem("The installed game data could not be read. Reinstall SnakesAndLadders to restore it.");
         }
     }
 
@@ -68,18 +68,17 @@ public final class GameActivity extends Activity {
     }
 
     private void problem(String text) {
-        new AlertDialog.Builder(this).setTitle("Salpakan").setMessage(text)
+        new AlertDialog.Builder(this).setTitle("SnakesAndLadders").setMessage(text)
             .setPositiveButton("Close", (d, w) -> finish()).setOnCancelListener(d -> finish()).show();
     }
 
     @Override public void onBackPressed() {
         if (game == null) { super.onBackPressed(); return; }
-        String back = "(()=>{const d=document.querySelector('dialog[open]');"
-            + "if(!d || (d.id==='settings' && document.body.hasAttribute('data-launch') && !document.getElementById('mode-step').hidden)) return false;"
+        String back = "(()=>{const d=document.querySelector('dialog[open]');if(!d || (d.id==='picker' && step==='mode' && !game)) return false;"
             + "if(d.dispatchEvent(new Event('cancel',{cancelable:true}))) d.close();return true;})()";
         game.evaluateJavascript(back, handled -> {
             if (!"true".equals(handled) && !isFinishing()) {
-                new AlertDialog.Builder(this).setTitle("Close Salpakan?").setMessage("Any match in progress will end.")
+                new AlertDialog.Builder(this).setTitle("Close SnakesAndLadders?").setMessage("Any match in progress will end.")
                     .setNegativeButton("Keep playing", null).setPositiveButton("Exit", (d,w) -> finish()).show();
             }
         });

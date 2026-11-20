@@ -1,85 +1,59 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#193c36">
-  <meta name="description" content="Play Salpakan, the Filipino hidden-rank strategy board game, solo or with a friend.">
-  <title>Salpakan · Game of the Generals</title>
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body data-launch>
-  <header class="mast"><div class="mast-inner">
-    <div class="brand"><span class="compass" aria-hidden="true">✥</span> Salpakan</div>
-    <nav aria-label="Game"><button id="rules-top" class="ghost">Rules &amp; ranks</button><button id="new-top" class="outline">New match <span aria-hidden="true">＋</span></button></nav>
-  </div></header>
-  <main>
-    <div class="intro"><button id="back-setup" class="outline" hidden>Back</button><h1>Game of the Generals</h1><p>Capture the opposing Flag, or guide your own to the far row.</p></div>
-    <div class="table-layout">
-      <section class="table" aria-label="Game table">
-        <div class="board-meta"><span id="opponent-label"></span><span id="mode-label"></span></div>
-        <div class="frame" id="frame"><div id="board-mount"></div></div>
-        <div class="board-meta bottom"><span id="player-label"></span><span id="turn-label"></span></div>
-      </section>
-      <aside>
-        <section class="panel command" aria-labelledby="phase-heading">
-          <div class="eyebrow"><span class="round-mark" aria-hidden="true"></span><span id="phase-label"></span></div>
-          <h2 id="phase-heading"></h2><p id="guidance"></p><div id="actions" class="actions"></div>
-        </section>
-        <section class="panel log-panel"><h3>Move log</h3><div id="moves-log"></div></section>
-        <button class="quick" id="rules-side"><span class="quick-icon" aria-hidden="true">✧</span><span>Rank reference</span><span aria-hidden="true">↗</span></button>
-      </aside>
-    </div>
-    <div id="live" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
-  </main>
-  <dialog id="settings" aria-labelledby="settings-title" closedby="none">
-    <div class="picker-brand"><span aria-hidden="true">✥</span> Salpakan</div>
-    <div class="modal-head"><h2 id="settings-title">Choose a game mode</h2></div>
-    <div id="mode-step">
-      <div class="picker-choices">
-        <button id="mode-ai" class="pick" aria-labelledby="solo-title" aria-describedby="solo-hint"><strong id="solo-title">Player vs AI</strong><small id="solo-hint">Play as Ivory against the computer.</small></button>
-        <button id="mode-duo" class="pick" aria-labelledby="duo-title" aria-describedby="duo-hint"><strong id="duo-title">Two Players</strong><small id="duo-hint">Share one device and take turns in private.</small></button>
-      </div>
-      <details id="match-options">
-        <summary>Match options</summary>
-        <label class="field">Opening turn<select id="first"><option value="ivory">Ivory moves first</option><option value="pine">Pine moves first</option><option value="coin">Flip a coin</option></select></label>
-        <fieldset><legend>Optional rules</legend><label class="check"><input id="open-ranks" type="checkbox"><span>Reveal challenge ranks<small>Both players can see the two ranks briefly after each challenge.</small></span></label>
-          <label class="check"><input id="tournament" type="checkbox"><span>Threefold repetition<small>Draw when the same full position and turn occur three times without a capture.</small></span></label></fieldset>
-      </details>
-      <button id="return-match" class="outline" hidden>Return to match</button>
-    </div>
-    <div id="difficulty-step" hidden>
-      <div class="picker-choices">
-        <button class="pick" data-difficulty="easy" aria-labelledby="easy-title" aria-describedby="easy-hint"><strong id="easy-title">Easy</strong><small id="easy-hint">A practice opponent that takes chances.</small></button>
-        <button class="pick" data-difficulty="medium" aria-labelledby="medium-title" aria-describedby="medium-hint"><strong id="medium-title">Medium</strong><small id="medium-hint">Remembers challenges and looks for favorable trades.</small></button>
-        <button class="pick" data-difficulty="hard" aria-labelledby="hard-title" aria-describedby="hard-hint"><strong id="hard-title">Hard</strong><small id="hard-hint">Tracks remaining ranks and weighs your next reply.</small></button>
-      </div>
-      <button id="back-mode" class="outline">Back</button>
-    </div>
-    <p id="replace-note" class="fine" hidden>Starting a new match replaces the current board.</p>
-  </dialog>
-  <dialog id="rulebook" aria-labelledby="rules-title">
-    <div class="modal-head"><h2 id="rules-title">Rules &amp; ranks</h2><button class="close" aria-label="Close rulebook">×</button></div>
-    <p>Each player secretly arranges 21 pieces in their nearest three rows. Leave six squares empty. On your turn, move one piece one square horizontally or vertically. Choose an opposing piece to challenge it.</p>
-    <h3>Winning the match</h3><p>Capture the enemy Flag, or take your Flag to the far row. If an enemy is next to your Flag when it arrives, it must survive their next move. An attacking Flag wins against a defending Flag and loses against any other rank.</p>
-    <h3>Challenges</h3><p>Higher officers beat lower officers and Privates. A Spy beats any officer. A Private beats a Spy. Equal ranks remove each other, except when two Flags meet. In standard play the arbiter announces the outcome and keeps enemy ranks hidden.</p>
-    <h3>Beginner’s capture guide</h3>
-    <p>Read the officer list from top to bottom. An officer captures anyone below it on the ladder and can capture the Flag. For example, a Captain takes a Sergeant. A Colonel takes a Captain.</p>
-    <p><b>Spy:</b> Takes every officer, even the 5-Star General, and the Flag. A Private beats a Spy, whichever piece starts the challenge.</p>
-    <p><b>Private:</b> Takes a Spy or Flag. Every officer beats a Private. Two Privates remove each other, as do two Spies or two officers of the same rank.</p>
-    <p><b>Flag:</b> Can capture only the opposing Flag by moving onto it. Any enemy can capture a defending Flag.</p>
-    <h3>Your 21 pieces</h3><p>The first twelve ranks form the officer ladder, strongest first. Six Privates follow. The two Spies and one Flag have special capture rules.</p>
-    <ul id="ranks-list" class="rank-list"></ul>
-    <h3>Ending a match</h3><p>Offer a draw on your turn. Play continues if your opponent declines. Use Resign to concede or record a forfeit. Threefold repetition is an optional tournament convention in this edition.</p>
-    <button class="outline wide close">Back to board</button>
-  </dialog>
-  <dialog id="confirm" aria-labelledby="confirm-title">
-    <div class="modal-head"><h2 id="confirm-title">Resign this match?</h2></div>
-    <p>Your opponent will win the match.</p><div class="actions"><button id="cancel-resign" class="outline">Keep playing</button><button id="do-resign" class="primary">Resign match</button></div>
-  </dialog>
-  <script src="src/rules.js"></script>
-  <script src="src/opponent.js"></script>
-  <script src="src/app.js"></script>
-</body>
-</html>
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Snakes &amp; Ladders</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6eedc;color:#263e33;font:16px 'Segoe UI',sans-serif}header,main{max-width:1020px;margin:auto;padding:16px}header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #cfc5aa}h1,h2{font-family:Georgia,serif;margin:.3em 0}h1{font-size:clamp(26px,4vw,44px)}button{color:inherit;background:#fffaf0;border:1px solid #aca488;border-radius:9px;padding:12px 16px;font:600 16px inherit;font-family:inherit;font-weight:bold;cursor:pointer}button:hover{background:#e9e1cb}button:focus-visible{outline:3px solid #d47626}.primary{background:#245644;color:white}.primary:hover{background:#326653}main{display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,30%);gap:22px}canvas{width:100%;height:auto;border:6px solid #345143;border-radius:12px;display:block}aside,dialog{background:#fffaf0;border:1px solid #cfc5aa;border-radius:14px;padding:18px}aside{align-self:start}aside p,dialog p{line-height:1.5}dialog{width:min(420px,94vw);color:inherit;max-height:90vh}dialog::backdrop{background:#182f27b8}#choices{display:grid;gap:8px;margin:16px 0}#actions{display:flex;gap:8px;flex-wrap:wrap}.pawn{display:inline-grid;place-items:center;width:24px;height:24px;color:white;border-radius:50%;margin-right:8px;font-weight:bold}ul{list-style:none;padding:0}li{margin:8px 0}#roll{font-size:24px}#status{min-height:3em}button[hidden]{display:none}@media(max-width:700px){main{grid-template-columns:1fr;gap:8px;padding:8px}aside{padding:12px}ul{display:flex;flex-wrap:wrap;gap:10px}li{margin:0}#status{min-height:0}header{padding:8px}button{padding:10px}}
+</style><header><h1>Snakes &amp; Ladders</h1><button id="rules">How to play</button></header><main><canvas id="board" width="800" height="800" aria-label="Numbered board. Token positions and moves are listed beside the board."></canvas><aside><h2 id="turn">Race to 100</h2><div id="roll"></div><p id="status" role="status">Climb the ladders and watch for snakes.</p><div id="actions"></div><ul id="scores"></ul><button id="menu" hidden>New game</button></aside></main>
+<dialog id="picker"><h2 id="heading">Choose a game</h2><p id="hint"></p><div id="choices"></div><button id="back" hidden>Back</button> <button id="resume" hidden>Resume game</button></dialog>
+<dialog id="guide"><h2>How to play</h2><p>Start off the board at 0. Roll one six-sided die, follow the numbers and climb a ladder when you land at its foot. Landing on a snake’s head sends you down to its tail. Players can share a square.</p><p>Reach 100 exactly to win. An overshoot keeps you on your square. Each player gets one turn per round, even after a six.</p><p>Local games use classic rolls. In AI games, each side gets two rerolls per match. After seeing a roll, keep it or spend a reroll. The replacement roll is final.</p><button id="close">Back to game</button></dialog>
+<script>
+const shortcuts={3:22,8:30,20:41,28:74,43:65,58:77,71:91,81:98,17:6,34:13,48:26,62:19,69:52,87:57,95:75,99:80};
+const colors=['#24685b','#ad483b','#43589a','#885a14'];
+const $=id=>document.getElementById(id);
+function landing(p,n){const target=p+n;return target>100?p:(shortcuts[target]??target)}
+function die(){return 1+Math.floor(Math.random()*6)}
+function value(pos){return pos===100?200:pos}
+function forecast(pos){return pos===100?200:Array.from({length:6},(_,i)=>value(landing(pos,i+1))).reduce((a,b)=>a+b)/6}
+function retry(level,pos,n,left){
+ if(!left||landing(pos,n)===100)return false;
+ if(level==='Easy')return false;
+ if(level==='Medium')return landing(pos,n)<pos;
+ const score=p=>value(p)*0.75+forecast(p)*0.25;
+ const average=Array.from({length:6},(_,i)=>score(landing(pos,i+1))).reduce((a,b)=>a+b)/6;
+ return average-score(landing(pos,n))>(pos>85?1:7)/left;
+}
+let game=null,timer,step='mode';
+function point(n){const r=Math.floor((n-1)/10),f=(n-1)%10;return [(r%2?9-f:f)*80+40,(9-r)*80+40]}
+function draw(){
+ const c=$('board').getContext('2d');c.clearRect(0,0,800,800);c.lineCap='round';
+ for(let n=1;n<=100;n++){const [x,y]=point(n);c.fillStyle=n===100?'#e5bc69':(n%2?'#e9dfc5':'#f8efd9');c.fillRect(x-40,y-40,80,80);c.fillStyle='#394b3b';c.font='bold 19px Georgia';c.fillText(n,x-34,y-16)}
+ for(const [a,b] of Object.entries(shortcuts)){const [x,y]=point(+a),[u,v]=point(b),dx=u-x,dy=v-y,len=Math.hypot(dx,dy),nx=-dy/len,ny=dx/len;
+ function line(x1,y1,x2,y2){c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke()}
+ if(b>+a){c.strokeStyle='#9a713e';c.lineWidth=5;for(const sign of [-1,1])line(x+nx*9*sign,y+ny*9*sign,u+nx*9*sign,v+ny*9*sign);for(let t=0;t<=len;t+=19)line(x+dx*t/len-nx*9,y+dy*t/len-ny*9,x+dx*t/len+nx*9,y+dy*t/len+ny*9)}
+ else{c.strokeStyle='#64805a';c.lineWidth=10;c.beginPath();for(let j=0;j<=40;j++){const t=j/40,w=13*Math.sin(t*4*Math.PI);const px=x+dx*t+nx*w,py=y+dy*t+ny*w;j?c.lineTo(px,py):c.moveTo(px,py)}c.stroke();c.fillStyle='#385a42';c.beginPath();c.arc(x,y,10,0,7);c.fill();c.fillStyle='white';c.fillRect(x-5,y-4,3,3);c.fillRect(x+2,y-4,3,3)}}
+ game?.pos.forEach((n,i)=>{if(!n)return;let [x,y]=point(n);x+=i%2*25-12;y+=Math.floor(i/2)*25-9;c.fillStyle=colors[i];c.beginPath();c.arc(x,y,13,0,7);c.fill();c.lineWidth=2;c.strokeStyle='white';c.stroke();c.fillStyle='white';c.font='bold 17px sans-serif';c.textAlign='center';c.fillText(i+1,x,y+6);c.textAlign='left'})
+}
+function button(label,fn){const b=document.createElement('button');b.textContent=label;b.onclick=fn;return b}
+function picker(next='mode'){clearTimeout(timer);step=next;const mode=next==='mode',solo=next==='solo';
+ $('heading').textContent=mode?'Choose a game':solo?'Choose AI difficulty':'How many players?';
+ $('hint').textContent=mode?'Play the computer or pass one device around.':solo?'Both sides roll the same die and get two rerolls.':'Take turns rolling on the same device.';
+ const labels=mode?['Player vs AI','Local players']:solo?['Easy','Medium','Hard']:['2 players','3 players','4 players'];
+ $('choices').replaceChildren(...labels.map((s,i)=>button(s,()=>mode?picker(i?'local':'solo'):start(solo?2:i+2,solo?s:null))));
+ $('back').hidden=mode;$('resume').hidden=!game;if(!$('picker').open)$('picker').showModal();$('choices').firstChild.focus()
+}
+function start(count,level){$('picker').close();game={level,pos:Array(count).fill(0),left:Array(count).fill(level?2:0),i:0,pending:0,last:0,over:false,msg:'Everyone starts at 0.'};render()}
+function nameOf(i){return game.level&&i===1?'Computer':'Player '+(i+1)}
+function finish(n){const g=game,i=g.i,p=g.pos[i],raw=p+n,to=landing(p,n);g.pos[i]=to;g.pending=0;g.last=n;g.msg=nameOf(i)+' rolled '+n+'. '+(raw>100?'Overshoot. Stay on '+p+'.':shortcuts[raw]?(to>raw?'Ladder! ':'Snake! ')+raw+' → '+to+'.':'Moved to '+to+'.');g.over=to===100;if(!g.over)g.i=(i+1)%g.pos.length;render()}
+function roll(){const g=game,n=die();if(g.level&&g.left[g.i]&&landing(g.pos[g.i],n)!==100){g.pending=n;render()}else finish(n)}
+function reroll(){game.left[game.i]--;finish(die())}
+function render(){clearTimeout(timer);draw();if(!game)return;const g=game,ai=g.level&&g.i===1;
+ $('menu').hidden=false;$('turn').textContent=nameOf(g.i)+(g.over?' wins!':'’s turn');$('roll').textContent=g.pending?'Rolled '+g.pending:g.last?'Last roll · '+g.last:'';
+ $('status').textContent=g.pending?'This roll lands on '+landing(g.pos[g.i],g.pending)+'. '+g.left[g.i]+' rerolls left.':g.msg;
+ $('scores').replaceChildren(...g.pos.map((p,i)=>{const li=document.createElement('li'),badge=document.createElement('span');badge.className='pawn';badge.style.background=colors[i];badge.textContent=i+1;li.append(badge,nameOf(i)+' · '+p);return li}));
+ const actions=$('actions');actions.replaceChildren();
+ if(g.over)actions.append(button('Play again',()=>start(g.pos.length,g.level)));
+ else if(ai){if(!document.querySelector('dialog[open]'))timer=setTimeout(()=>g.pending?(retry(g.level,g.pos[g.i],g.pending,g.left[g.i])?reroll():finish(g.pending)):roll(),450)}
+ else if(g.pending)actions.append(button('Keep roll',()=>finish(g.pending)),button('Reroll',reroll));
+ else actions.append(button('Roll die',roll));actions.firstChild?.classList.add('primary')
+}
+$('menu').onclick=()=>picker();$('back').onclick=()=>picker();$('resume').onclick=()=>{$('picker').close();render()};$('rules').onclick=()=>{clearTimeout(timer);$('guide').showModal()};$('close').onclick=()=>$('guide').close();$('guide').onclose=render;
+$('picker').oncancel=e=>{e.preventDefault();if(step!=='mode')picker();else if(game)$('resume').click()};draw();picker();
+</script></html>

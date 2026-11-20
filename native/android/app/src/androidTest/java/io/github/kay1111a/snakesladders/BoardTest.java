@@ -1,4 +1,4 @@
-package io.github.kay1111a.salpakan;
+package io.github.kay1111a.snakesladders;
 
 import static org.junit.Assert.*;
 import android.app.Instrumentation;
@@ -94,31 +94,11 @@ public class BoardTest {
     @Test public void playOfflineOnInstalledApk() throws Exception {
         assertEquals(PackageManager.PERMISSION_DENIED, device.getTargetContext().checkSelfPermission(android.Manifest.permission.INTERNET));
         try (ActivityScenario<GameActivity> app = ActivityScenario.launch(GameActivity.class)) {
-            String modes="!!document.querySelector('#settings[open] #mode-step:not([hidden])')";
-            String levels="!!document.querySelector('#settings[open] #difficulty-step:not([hidden])')";
-            String cells="document.querySelectorAll('[data-cell]').length";
-            awaitJs(app,modes,"true");
-            awaitJs(app,cells,"0");
-            // DOM readiness can precede the first composited frame on a cold emulator.
-            CompletableFuture<Boolean> painted=new CompletableFuture<>();
-            app.onActivity(a -> ((WebView)a.findViewById(R.id.game_board)).postVisualStateCallback(1,
-                new WebView.VisualStateCallback() {
-                    @Override public void onComplete(long requestId) { painted.complete(true); }
-                }));
-            painted.get(15,TimeUnit.SECONDS);
-            tap(app,"#mode-ai");
-            awaitJs(app,levels,"true");
-            awaitJs(app,cells,"0");
+            awaitJs(app,"!!document.querySelector('#picker[open] #choices button')","true");
+            tap(app,"#choices button");
+            awaitJs(app,"document.getElementById('heading').textContent",JSONObject.quote("Choose AI difficulty"));
             device.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
-            awaitJs(app,modes,"true");
-            awaitJs(app,cells,"0");
-            tap(app,"#mode-ai");
-            awaitJs(app,levels,"true");
-            tap(app,"[data-difficulty='hard']");
-            awaitJs(app,"document.querySelector('#mode-label').textContent",JSONObject.quote("Vs computer · Hard"));
-            awaitJs(app,cells,"72");
-            app.recreate();
-            awaitJs(app,modes,"true");
+            awaitJs(app,"document.getElementById('heading').textContent",JSONObject.quote("Choose a game"));
             try (InputStream input=device.getContext().getAssets().open("play.js")) {
                 ByteArrayOutputStream bytes=new ByteArrayOutputStream(); byte[] buf=new byte[4096]; int n;
                 while ((n=input.read(buf))!=-1) bytes.write(buf,0,n);
@@ -129,8 +109,8 @@ public class BoardTest {
                 JSONObject info=new JSONObject(js(app,"window.nativePlaytest || {}"));
                 if (info.has("error")) fail(info.getString("error"));
                 if (info.optBoolean("done")) {
-                    assertEquals(4,info.getJSONArray("matches").length());
-                    Log.i("SalpakanQA",info.getJSONArray("matches").toString());
+                    assertEquals(6,info.getJSONArray("matches").length());
+                    Log.i("SnakesAndLaddersQA",info.getJSONArray("matches").toString());
                     return;
                 }
                 SystemClock.sleep(350);

@@ -3,25 +3,24 @@ plugins { id 'com.android.application' }
 def projectRoot = rootProject.projectDir.parentFile.parentFile
 def gameAssets = layout.buildDirectory.dir('generated/gameAssets')
 def prepareGame = tasks.register('prepareGame', Exec) {
-    inputs.files(new File(projectRoot, 'index.html'), new File(projectRoot, 'styles.css'),
-        new File(projectRoot, 'tools/build.py'), fileTree(new File(projectRoot, 'src')), fileTree(new File(projectRoot, 'assets')))
+    inputs.files(new File(projectRoot, 'index.html'), new File(projectRoot, 'tools/build.py'))
     outputs.dir(gameAssets)
     workingDir projectRoot
     commandLine 'python', 'tools/build.py'
     doLast {
-        copy { from new File(projectRoot, 'dist/Salpakan.html'); into gameAssets }
+        copy { from new File(projectRoot, 'dist/SnakesAndLadders.html'); into gameAssets }
     }
 }
 
 android {
-    namespace 'io.github.kay1111a.salpakan'
+    namespace 'io.github.kay1111a.snakesladders'
     compileSdk 35
     defaultConfig {
-        applicationId 'io.github.kay1111a.salpakan'
+        applicationId 'io.github.kay1111a.snakesladders'
         minSdk 28
         targetSdk 35
-        versionCode 5
-        versionName '1.4.0'
+        versionCode 1
+        versionName '1.0.0'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     buildTypes {

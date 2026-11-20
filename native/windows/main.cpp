@@ -27,7 +27,7 @@ void writeReport(const std::wstring& text) {
 void fail(HWND window, const wchar_t* message) {
     if (IsWindow(window)) {
         if (selfTest) { exitCode = 1; writeReport(message); }
-        else MessageBoxW(window, message, L"Salpakan", MB_OK | MB_ICONERROR);
+        else MessageBoxW(window, message, L"SnakesAndLadders", MB_OK | MB_ICONERROR);
         DestroyWindow(window);
     }
 }
@@ -56,7 +56,7 @@ void playTestWhenReady(HWND window) {
             event->get_IsSuccess(&ok);
             const auto test = resourceText(103);
             if (!ok || test.empty()) { fail(window, L"Unable to load the packaged board or its test."); return S_OK; }
-            auto script = test + L"\nif (document.querySelector('#settings[open] #mode-ai') && !window.nativePlaytest) void playNativeMatches();";
+            auto script = test + L"\nif (document.querySelector('#picker[open] #choices button') && !window.nativePlaytest) void playNativeMatches();";
             if (FAILED(page->ExecuteScript(script.c_str(), nullptr))) {
                 fail(window, L"Unable to start the native playthrough."); return S_OK;
             }
@@ -100,14 +100,14 @@ void startGame(HWND window) {
         fail(window, L"Windows could not open your application data folder.");
         return;
     }
-    const std::wstring directory = std::wstring(local) + L"\\Salpakan";
+    const std::wstring directory = std::wstring(local) + L"\\SnakesAndLadders";
     CoTaskMemFree(local);
     if (!CreateDirectoryW(directory.c_str(), nullptr) && GetLastError() != ERROR_ALREADY_EXISTS) {
-        fail(window, L"Windows could not create Salpakan's local data folder.");
+        fail(window, L"Windows could not create SnakesAndLadders's local data folder.");
         return;
     }
     const std::wstring profile = directory + L"\\WebView2";
-    const wchar_t* missing = L"Salpakan needs the Microsoft Edge WebView2 Runtime. Install it from Microsoft, then open the game again.";
+    const wchar_t* missing = L"SnakesAndLadders needs the Microsoft Edge WebView2 Runtime. Install it from Microsoft, then open the game again.";
     auto environmentReady = Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>(
         [window, missing](HRESULT status, ICoreWebView2Environment* env) -> HRESULT {
             if (!IsWindow(window)) return S_OK;
@@ -176,10 +176,10 @@ int WINAPI wWinMain(HINSTANCE app, HINSTANCE, PWSTR commandLine, int show) {
     if (FAILED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED))) return 1;
     WNDCLASSW cls{};
     cls.lpfnWndProc = windowProc; cls.hInstance = app;
-    cls.lpszClassName = L"SalpakanBoardGame"; cls.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    cls.lpszClassName = L"SnakesAndLaddersBoardGame"; cls.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     cls.hIcon = LoadIconW(app, MAKEINTRESOURCEW(102)); cls.hbrBackground = GetSysColorBrush(COLOR_WINDOW);
     RegisterClassW(&cls);
-    HWND hwnd = CreateWindowExW(0, cls.lpszClassName, L"Salpakan · Game of the Generals",
+    HWND hwnd = CreateWindowExW(0, cls.lpszClassName, L"Snakes & Ladders",
         WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 1120, 800, nullptr, nullptr, app, nullptr);
     if (!hwnd) { CoUninitialize(); return 1; }
     ShowWindow(hwnd, show);

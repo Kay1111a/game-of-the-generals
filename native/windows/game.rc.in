@@ -1,10 +1,9 @@
 #include <windows.h>
 101 RCDATA "@GAME_HTML@"
 103 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/../../tests/native/play.js"
-102 ICON "@CMAKE_CURRENT_SOURCE_DIR@/salpakan.ico"
 1 VERSIONINFO
-FILEVERSION 1,4,0,0
-PRODUCTVERSION 1,4,0,0
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
 FILEOS VOS_NT_WINDOWS32
 FILETYPE VFT_APP
 BEGIN
@@ -12,11 +11,11 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "FileDescription", "Salpakan - Game of the Generals"
-            VALUE "ProductName", "Salpakan"
-            VALUE "ProductVersion", "1.4.0"
-            VALUE "FileVersion", "1.4.0"
-            VALUE "OriginalFilename", "Salpakan.exe"
+            VALUE "FileDescription", "Snakes and Ladders"
+            VALUE "ProductName", "SnakesAndLadders"
+            VALUE "ProductVersion", "1.0.0"
+            VALUE "FileVersion", "1.0.0"
+            VALUE "OriginalFilename", "SnakesAndLadders.exe"
         END
     END
     BLOCK "VarFileInfo"

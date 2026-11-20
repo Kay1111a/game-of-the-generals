@@ -10,4 +10,4 @@ cmake -S $PSScriptRoot -B "$work/cmake" -A x64 "-DWEBVIEW2_SDK=$work/packages/Mi
 if ($LASTEXITCODE) { throw "CMake configuration failed" }
 cmake --build "$work/cmake" --config Release --clean-first
 if ($LASTEXITCODE) { throw "Windows build failed" }
-Copy-Item "$work/cmake/Release/Salpakan.exe" "$root/dist/Salpakan.exe" -Force
+Copy-Item "$work/cmake/Release/SnakesAndLadders.exe" "$root/dist/SnakesAndLadders.exe" -Force
