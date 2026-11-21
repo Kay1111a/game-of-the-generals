@@ -2,7 +2,7 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f6eedc;color:#263e33;font:16px 'Segoe UI',sans-serif}header,main{max-width:1020px;margin:auto;padding:16px}header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #cfc5aa}h1,h2{font-family:Georgia,serif;margin:.3em 0}h1{font-size:clamp(26px,4vw,44px)}button{color:inherit;background:#fffaf0;border:1px solid #aca488;border-radius:9px;padding:12px 16px;font:600 16px inherit;font-family:inherit;font-weight:bold;cursor:pointer}button:hover{background:#e9e1cb}button:focus-visible{outline:3px solid #d47626}.primary{background:#245644;color:white}.primary:hover{background:#326653}main{display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,30%);gap:22px}canvas{width:100%;height:auto;border:6px solid #345143;border-radius:12px;display:block}aside,dialog{background:#fffaf0;border:1px solid #cfc5aa;border-radius:14px;padding:18px}aside{align-self:start}aside p,dialog p{line-height:1.5}dialog{width:min(420px,94vw);color:inherit;max-height:90vh}dialog::backdrop{background:#182f27b8}#choices{display:grid;gap:8px;margin:16px 0}#actions{display:flex;gap:8px;flex-wrap:wrap}.pawn{display:inline-grid;place-items:center;width:24px;height:24px;color:white;border-radius:50%;margin-right:8px;font-weight:bold}ul{list-style:none;padding:0}li{margin:8px 0}#roll{font-size:24px}#status{min-height:3em}button[hidden]{display:none}@media(max-width:700px){main{grid-template-columns:1fr;gap:8px;padding:8px}aside{padding:12px}ul{display:flex;flex-wrap:wrap;gap:10px}li{margin:0}#status{min-height:0}header{padding:8px}button{padding:10px}}
 </style><header><h1>Snakes &amp; Ladders</h1><button id="rules">How to play</button></header><main><canvas id="board" width="800" height="800" aria-label="Numbered board. Token positions and moves are listed beside the board."></canvas><aside><h2 id="turn">Race to 100</h2><div id="roll"></div><p id="status" role="status">Climb the ladders and watch for snakes.</p><div id="actions"></div><ul id="scores"></ul><button id="menu" hidden>New game</button></aside></main>
-<dialog id="picker"><h2 id="heading">Choose a game</h2><p id="hint"></p><div id="choices"></div><button id="back" hidden>Back</button> <button id="resume" hidden>Resume game</button></dialog>
+<dialog id="picker" aria-labelledby="heading" closedby="none"><h2 id="heading">Choose a game</h2><p id="hint"></p><div id="choices"></div><button id="back" hidden>Back</button> <button id="resume" hidden>Resume game</button></dialog>
 <dialog id="guide"><h2>How to play</h2><p>Start off the board at 0. Roll one six-sided die, follow the numbers and climb a ladder when you land at its foot. Landing on a snake’s head sends you down to its tail. Players can share a square.</p><p>Reach 100 exactly to win. An overshoot keeps you on your square. Each player gets one turn per round, even after a six.</p><p>Local games use classic rolls. In AI games, each side gets two rerolls per match. After seeing a roll, keep it or spend a reroll. The replacement roll is final.</p><button id="close">Back to game</button></dialog>
 <script>
 const shortcuts={3:22,8:30,20:41,28:74,43:65,58:77,71:91,81:98,17:6,34:13,48:26,62:19,69:52,87:57,95:75,99:80};
@@ -10,26 +10,64 @@ const colors=['#24685b','#ad483b','#43589a','#885a14'];
 const $=id=>document.getElementById(id);
 function landing(p,n){const target=p+n;return target>100?p:(shortcuts[target]??target)}
 function die(){return 1+Math.floor(Math.random()*6)}
-function value(pos){return pos===100?200:pos}
-function forecast(pos){return pos===100?200:Array.from({length:6},(_,i)=>value(landing(pos,i+1))).reduce((a,b)=>a+b)/6}
+const rerollsPerSide = 2;
+let hardRerolls;
+function planHardRerolls() {
+  const destinations = Array.from({length:100}, (_, square) =>
+    Array.from({length:6}, (_, face) => landing(square, face + 1)));
+  // A roughly 30-turn rival makes near-term chances to win more valuable.
+  const chanceRaceContinues = 29 / 30;
+  const plans = [];
+  let previous = Array(101).fill(0);
+  for (let left = 0; left <= rerollsPerSide; left++) {
+    // A replacement roll is final and leaves one fewer token for future turns.
+    const replacement = destinations.map(row => left === 0 ? Infinity :
+      row.reduce((sum, to) => sum + previous[to], 0) / 6);
+    let turns = previous.slice();
+    for (let iteration = 0; iteration < 2000; iteration++) {
+      const next = turns.slice();
+      let change = 0;
+      for (let square = 0; square < 100; square++) {
+        const future = destinations[square].reduce((sum, to) =>
+          sum + Math.min(turns[to], replacement[square]), 0);
+        next[square] = 1 + chanceRaceContinues * future / 6;
+        change = Math.max(change, Math.abs(next[square] - turns[square]));
+      }
+      turns = next;
+      if (change < 1e-9) break;
+    }
+    if (left > 0) {
+      plans[left] = destinations.map((row, square) =>
+        row.map(to => turns[to] > replacement[square] + 1e-8));
+    }
+    previous = turns;
+  }
+  return plans;
+}
 function retry(level,pos,n,left){
  if(!left||landing(pos,n)===100)return false;
  if(level==='Easy')return false;
  if(level==='Medium')return landing(pos,n)<pos;
- const score=p=>value(p)*0.75+forecast(p)*0.25;
- const average=Array.from({length:6},(_,i)=>score(landing(pos,i+1))).reduce((a,b)=>a+b)/6;
- return average-score(landing(pos,n))>(pos>85?1:7)/left;
+ hardRerolls ??= planHardRerolls();
+ return hardRerolls[left][pos][n-1];
 }
 let game=null,timer,step='mode';
 function point(n){const r=Math.floor((n-1)/10),f=(n-1)%10;return [(r%2?9-f:f)*80+40,(9-r)*80+40]}
 function draw(){
  const c=$('board').getContext('2d');c.clearRect(0,0,800,800);c.lineCap='round';
- for(let n=1;n<=100;n++){const [x,y]=point(n);c.fillStyle=n===100?'#e5bc69':(n%2?'#e9dfc5':'#f8efd9');c.fillRect(x-40,y-40,80,80);c.fillStyle='#394b3b';c.font='bold 19px Georgia';c.fillText(n,x-34,y-16)}
+ for(let n=1;n<=100;n++){const [x,y]=point(n);c.fillStyle=n===100?'#e5bc69':(n%2?'#e9dfc5':'#f8efd9');c.fillRect(x-40,y-40,80,80)}
  for(const [a,b] of Object.entries(shortcuts)){const [x,y]=point(+a),[u,v]=point(b),dx=u-x,dy=v-y,len=Math.hypot(dx,dy),nx=-dy/len,ny=dx/len;
  function line(x1,y1,x2,y2){c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke()}
  if(b>+a){c.strokeStyle='#9a713e';c.lineWidth=5;for(const sign of [-1,1])line(x+nx*9*sign,y+ny*9*sign,u+nx*9*sign,v+ny*9*sign);for(let t=0;t<=len;t+=19)line(x+dx*t/len-nx*9,y+dy*t/len-ny*9,x+dx*t/len+nx*9,y+dy*t/len+ny*9)}
  else{c.strokeStyle='#64805a';c.lineWidth=10;c.beginPath();for(let j=0;j<=40;j++){const t=j/40,w=13*Math.sin(t*4*Math.PI);const px=x+dx*t+nx*w,py=y+dy*t+ny*w;j?c.lineTo(px,py):c.moveTo(px,py)}c.stroke();c.fillStyle='#385a42';c.beginPath();c.arc(x,y,10,0,7);c.fill();c.fillStyle='white';c.fillRect(x-5,y-4,3,3);c.fillRect(x+2,y-4,3,3)}}
- game?.pos.forEach((n,i)=>{if(!n)return;let [x,y]=point(n);x+=i%2*25-12;y+=Math.floor(i/2)*25-9;c.fillStyle=colors[i];c.beginPath();c.arc(x,y,13,0,7);c.fill();c.lineWidth=2;c.strokeStyle='white';c.stroke();c.fillStyle='white';c.font='bold 17px sans-serif';c.textAlign='center';c.fillText(i+1,x,y+6);c.textAlign='left'})
+ // Paint square numbers above crossing routes. Leave the lower half for the pawns.
+ c.font='bold 23px Georgia';c.lineWidth=4;c.lineJoin='round';c.strokeStyle='#fff8e8';c.fillStyle='#263d31';
+ for(let n=1;n<=100;n++){
+   const [x,y]=point(n);
+   c.strokeText(String(n),x-34,y-18);
+   c.fillText(String(n),x-34,y-18);
+ }
+ game?.pos.forEach((n,i)=>{if(!n)return;let [x,y]=point(n);x+=i%2*25-12;y+=Math.floor(i/2)*26-3;c.fillStyle=colors[i];c.beginPath();c.arc(x,y,13,0,7);c.fill();c.lineWidth=2;c.strokeStyle='white';c.stroke();c.fillStyle='white';c.font='bold 17px sans-serif';c.textAlign='center';c.fillText(i+1,x,y+6);c.textAlign='left'})
 }
 function button(label,fn){const b=document.createElement('button');b.textContent=label;b.onclick=fn;return b}
 function picker(next='mode'){clearTimeout(timer);step=next;const mode=next==='mode',solo=next==='solo';
@@ -39,7 +77,7 @@ function picker(next='mode'){clearTimeout(timer);step=next;const mode=next==='mo
  $('choices').replaceChildren(...labels.map((s,i)=>button(s,()=>mode?picker(i?'local':'solo'):start(solo?2:i+2,solo?s:null))));
  $('back').hidden=mode;$('resume').hidden=!game;if(!$('picker').open)$('picker').showModal();$('choices').firstChild.focus()
 }
-function start(count,level){$('picker').close();game={level,pos:Array(count).fill(0),left:Array(count).fill(level?2:0),i:0,pending:0,last:0,over:false,msg:'Everyone starts at 0.'};render()}
+function start(count,level){$('picker').close();game={level,pos:Array(count).fill(0),left:Array(count).fill(level?rerollsPerSide:0),i:0,pending:0,last:0,over:false,msg:'Everyone starts at 0.'};render();$('actions').firstElementChild.focus({preventScroll:true})}
 function nameOf(i){return game.level&&i===1?'Computer':'Player '+(i+1)}
 function finish(n){const g=game,i=g.i,p=g.pos[i],raw=p+n,to=landing(p,n);g.pos[i]=to;g.pending=0;g.last=n;g.msg=nameOf(i)+' rolled '+n+'. '+(raw>100?'Overshoot. Stay on '+p+'.':shortcuts[raw]?(to>raw?'Ladder! ':'Snake! ')+raw+' → '+to+'.':'Moved to '+to+'.');g.over=to===100;if(!g.over)g.i=(i+1)%g.pos.length;render()}
 function roll(){const g=game,n=die();if(g.level&&g.left[g.i]&&landing(g.pos[g.i],n)!==100){g.pending=n;render()}else finish(n)}
@@ -48,12 +86,19 @@ function render(){clearTimeout(timer);draw();if(!game)return;const g=game,ai=g.l
  $('menu').hidden=false;$('turn').textContent=nameOf(g.i)+(g.over?' wins!':'’s turn');$('roll').textContent=g.pending?'Rolled '+g.pending:g.last?'Last roll · '+g.last:'';
  $('status').textContent=g.pending?'This roll lands on '+landing(g.pos[g.i],g.pending)+'. '+g.left[g.i]+' rerolls left.':g.msg;
  $('scores').replaceChildren(...g.pos.map((p,i)=>{const li=document.createElement('li'),badge=document.createElement('span');badge.className='pawn';badge.style.background=colors[i];badge.textContent=i+1;li.append(badge,nameOf(i)+' · '+p);return li}));
- const actions=$('actions');actions.replaceChildren();
+ const actions=$('actions');
+ const followTurn=actions.contains(document.activeElement)||document.activeElement===document.body;
+ actions.replaceChildren();
  if(g.over)actions.append(button('Play again',()=>start(g.pos.length,g.level)));
  else if(ai){if(!document.querySelector('dialog[open]'))timer=setTimeout(()=>g.pending?(retry(g.level,g.pos[g.i],g.pending,g.left[g.i])?reroll():finish(g.pending)):roll(),450)}
  else if(g.pending)actions.append(button('Keep roll',()=>finish(g.pending)),button('Reroll',reroll));
- else actions.append(button('Roll die',roll));actions.firstChild?.classList.add('primary')
+ else actions.append(button('Roll die',roll));actions.firstChild?.classList.add('primary');
+ if(followTurn&&!document.querySelector('dialog[open]'))actions.firstElementChild?.focus({preventScroll:true})
 }
 $('menu').onclick=()=>picker();$('back').onclick=()=>picker();$('resume').onclick=()=>{$('picker').close();render()};$('rules').onclick=()=>{clearTimeout(timer);$('guide').showModal()};$('close').onclick=()=>$('guide').close();$('guide').onclose=render;
-$('picker').oncancel=e=>{e.preventDefault();if(step!=='mode')picker();else if(game)$('resume').click()};draw();picker();
+function backFromPicker(){if(step!=='mode')picker();else if(game)$('resume').click()}
+$('picker').onkeydown=e=>{
+ if(e.key==='Escape'){e.preventDefault();if(!e.repeat)backFromPicker()}
+};
+$('picker').oncancel=e=>{e.preventDefault();backFromPicker()};draw();picker();
 </script></html>

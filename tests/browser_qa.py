@@ -9,7 +9,7 @@ from playwright.sync_api import expect, sync_playwright
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BOARD = (ROOT / "dist" / "SnakesAndLadders.html").as_uri()
+BOARD = Path(os.environ.get("SNAKES_QA_HTML", ROOT / "dist" / "SnakesAndLadders.html")).resolve().as_uri()
 OUT = ROOT / "test-results"
 LADDERS = {3: 22, 8: 30, 20: 41, 28: 74, 43: 65, 58: 77, 71: 91, 81: 98}
 SNAKES = {17: 6, 34: 13, 48: 26, 62: 19, 69: 52, 87: 57, 95: 75, 99: 80}
@@ -119,6 +119,42 @@ class BoardQA(unittest.TestCase):
         }""")
         self.assertEqual(faces, [n for n in range(1, 7) for _ in range(2)])
 
+    def test_square_numbers_remain_visible(self):
+        # Capture the intended ink independently of the order of drawing, then
+        # compare it with the pixels that survived on the finished board.
+        glyphs = self.p.evaluate("""() => {
+          const board = document.querySelector("canvas");
+          const ctx = board.getContext("2d");
+          const ink = document.createElement("canvas");
+          ink.width = board.width;
+          ink.height = board.height;
+          const ref = ink.getContext("2d"), labels = [];
+          const original = ctx.fillText;
+          ctx.fillText = function(text, x, y, ...extra) {
+            for (const key of ["font", "textAlign", "textBaseline", "fillStyle"]) ref[key] = this[key];
+            ref.fillText(text, x, y, ...extra);
+            labels.push([Number(text), x, y]);
+            return original.call(this, text, x, y, ...extra);
+          };
+          try { draw(); } finally { delete ctx.fillText; }
+          const intended = ref.getImageData(0, 0, ink.width, ink.height).data;
+          const actual = ctx.getImageData(0, 0, board.width, board.height).data;
+          return labels.map(([n, x, y]) => {
+            const left = Math.floor(x / 80) * 80, top = Math.floor(y / 80) * 80;
+            let solid = 0, missing = 0;
+            for (let iy = top; iy < top + 80; iy++) for (let ix = left; ix < left + 80; ix++) {
+              const k = 4 * (iy * ink.width + ix);
+              if (intended[k+3] < 250) continue;
+              solid++;
+              if ([0, 1, 2].some(i => Math.abs(intended[k+i] - actual[k+i]) > 12)) missing++;
+            }
+            return [n, solid, missing];
+          });
+        }""")
+        self.assertEqual(sorted(n for n, _, _ in glyphs), list(range(1, 101)))
+        obscured = [n for n, total, missing in glyphs if not total or missing / total > 0.02]
+        self.assertEqual(obscured, [], "Square labels covered on the finished board")
+
     def test_difficulty_order(self):
         benchmark = (ROOT / "tests" / "pace.js").read_text(encoding="utf-8")
         for first in (12000, 90000):
@@ -138,6 +174,13 @@ class BoardQA(unittest.TestCase):
         expect(self.button("Local players")).to_be_visible()
         self.key("Escape")
         self.start("Local players", "3 players")
+        self.button("New game").click()
+        self.button("Player vs AI").click()
+        self.key("Escape")
+        expect(self.p.locator("#heading")).to_have_text("Choose a game")
+        self.key("Escape")
+        expect(self.button("Roll die")).to_be_visible()
+        self.assertEqual(self.positions(), [0, 0, 0])
 
     def test_keyboard_rolls_without_retabbing(self):
         self.dice(3, 3)
